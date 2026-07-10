@@ -1,5 +1,7 @@
 """Streamlit Web Application for Perfume Scanner."""
 
+import base64
+import os
 import time
 import pandas as pd
 import streamlit as st
@@ -15,6 +17,33 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+def get_image_base64(image_filename: str) -> str:
+    """Reads a local asset image and returns it as a base64 encoded data URI."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    image_path = os.path.join(current_dir, "assets", image_filename)
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            encoded_str = base64.b64encode(img_file.read()).decode("utf-8")
+            return f"data:image/png;base64,{encoded_str}"
+    return ""
+
+
+def get_perfume_image(query: str) -> str:
+    """Matches search query to available perfume assets, returning base64 URI."""
+    q_lower = query.lower().strip()
+    if "sauvage" in q_lower:
+        return get_image_base64("sauvage.png")
+    elif "bleu" in q_lower or "chanel" in q_lower:
+        return get_image_base64("bleu_de_chanel.png")
+    elif "aventus" in q_lower or "creed" in q_lower:
+        return get_image_base64("aventus.png")
+    elif "libre" in q_lower:
+        return get_image_base64("libre.png")
+    else:
+        return get_image_base64("generic_perfume.png")
+
 
 # Custom Premium Styling
 st.markdown(
@@ -51,7 +80,7 @@ st.markdown(
         /* Grid container */
         .deals-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             margin: 2rem 0;
         }
@@ -69,13 +98,13 @@ st.markdown(
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 250px;
+            min-height: 420px;
         }
         
         .deal-card:hover {
             transform: translateY(-5px);
             border-color: rgba(168, 129, 175, 0.4);
-            box-shadow: 0 10px 25px rgba(168, 129, 175, 0.1);
+            box-shadow: 0 10px 25px rgba(168, 129, 175, 0.15);
             background: rgba(255, 255, 255, 0.04);
         }
         
@@ -92,17 +121,43 @@ st.markdown(
             background: linear-gradient(135deg, rgba(46, 213, 115, 0.05) 0%, rgba(46, 213, 115, 0.12) 100%);
         }
         
+        /* Product Image Layout */
+        .product-image-container {
+            width: 100%;
+            height: 180px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .deal-card:hover .product-image {
+            transform: scale(1.08);
+        }
+        
         /* Badges */
         .badge {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 700;
             padding: 0.25rem 0.65rem;
             border-radius: 20px;
             letter-spacing: 0.05em;
             text-transform: uppercase;
+            z-index: 10;
         }
         
         .cheapest-badge {
@@ -130,15 +185,14 @@ st.markdown(
             letter-spacing: 0.1em;
             color: #8f92a1;
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            margin-top: 0.5rem;
+            margin-bottom: 0.4rem;
         }
         
         .product-title {
             font-size: 1.15rem;
             font-weight: 600;
             color: #ffffff;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -148,7 +202,7 @@ st.markdown(
         }
         
         .price-section {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
         }
         
         .price-label {
@@ -218,11 +272,10 @@ st.markdown(
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    # Use standard Streamlit form to prevent query trigger on every letter typed
     with st.form("search_form", clear_on_submit=False):
         perfume_query = st.text_input(
             label="Search Perfume",
-            placeholder="Type perfume name (e.g. Dior Sauvage, Creed Aventus, YSL Libre)...",
+            placeholder="Type perfume name (e.g. Dior Sauvage, Bleu de Chanel, Creed Aventus, YSL Libre)...",
             label_visibility="collapsed",
         )
         submit_button = st.form_submit_button(
@@ -234,9 +287,11 @@ if submit_button or perfume_query:
     if not perfume_query.strip():
         st.warning("Please enter a valid perfume name to scan.")
     else:
+        # Resolve the dynamic image asset matching this perfume
+        perfume_img_base64 = get_perfume_image(perfume_query)
+
         # Beautiful loading spinner
         with st.spinner(f"Scanning retailers for '{perfume_query}'... Please wait."):
-            # Sleep slightly to make scanning feel highly robust and realistic
             time.sleep(1.2)
             raw_deals = scrape_all_retailers(perfume_query)
             processed_data = process_and_compare_deals(raw_deals)
@@ -251,7 +306,6 @@ if submit_button or perfume_query:
             if cheapest_deal:
                 st.subheader("🔥 Best Deal Found")
                 
-                # Render absolute cheapest as a big banner card
                 badge_type = (
                     "simulated" if cheapest_deal.get("is_simulated") else "real"
                 )
@@ -259,19 +313,24 @@ if submit_button or perfume_query:
                 
                 st.markdown(
                     f"""
-                    <div class="deal-card cheapest-card" style="min-height: auto; padding: 2rem; margin-bottom: 2rem;">
+                    <div class="deal-card cheapest-card" style="min-height: auto; padding: 2rem; margin-bottom: 2rem; flex-direction: row; align-items: center; gap: 2rem;">
                         <span class="badge cheapest-badge">🥇 Cheapest Deal</span>
-                        <div class="retailer-name">{cheapest_deal['retailer']} ({badge_label})</div>
-                        <div class="product-title" style="font-size: 1.5rem; height: auto; display: block; margin-bottom: 1rem;">
-                            {cheapest_deal['product_name']}
+                        <div class="product-image-container" style="width: 200px; height: 200px; margin-bottom: 0; flex-shrink: 0;">
+                            <img class="product-image" src="{perfume_img_base64}" />
                         </div>
-                        <div class="price-section" style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem;">
-                            <div class="price-value" style="font-size: 3rem;">{cheapest_deal['price_str']}</div>
-                            <div class="price-label">cheapest absolute price</div>
+                        <div style="flex-grow: 1;">
+                            <div class="retailer-name">{cheapest_deal['retailer']} ({badge_label})</div>
+                            <div class="product-title" style="font-size: 1.5rem; height: auto; display: block; margin-bottom: 1rem;">
+                                {cheapest_deal['product_name']}
+                            </div>
+                            <div class="price-section" style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem;">
+                                <div class="price-value" style="font-size: 3rem;">{cheapest_deal['price_str']}</div>
+                                <div class="price-label">cheapest absolute price</div>
+                            </div>
+                            <a href="{cheapest_deal['link']}" target="_blank" class="action-link" style="max-width: 300px;">
+                                Grab This Deal ↗
+                            </a>
                         </div>
-                        <a href="{cheapest_deal['link']}" target="_blank" class="action-link" style="max-width: 300px;">
-                            Grab This Deal ↗
-                        </a>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -297,6 +356,9 @@ if submit_button or perfume_query:
                 <div class="{card_class}">
                     {badge_html}
                     <div>
+                        <div class="product-image-container">
+                            <img class="product-image" src="{perfume_img_base64}" />
+                        </div>
                         <div class="retailer-name">{deal['retailer']}</div>
                         <div class="product-title">{deal['product_name']}</div>
                     </div>
@@ -315,10 +377,8 @@ if submit_button or perfume_query:
             # Graphical Comparison
             st.subheader("📊 Price Comparison Chart")
             
-            # Prepare data frame for charting
             chart_data = []
             for deal in sorted_deals:
-                # Filter out failures with inf price values
                 if deal["price_val"] != float("inf"):
                     chart_data.append({
                         "Retailer": deal["retailer"],
@@ -327,18 +387,38 @@ if submit_button or perfume_query:
                     
             if chart_data:
                 df = pd.DataFrame(chart_data)
-                # Set index to Retailer so it labels the bar chart nicely
                 df = df.set_index("Retailer")
-                
                 st.bar_chart(df)
             else:
                 st.info("No numerical prices available to display chart comparison.")
 else:
-    # Landing page layout with instructions/intro cards
+    # Landing page layout with instructions/intro cards and preview images
+    sauvage_preview = get_image_base64("sauvage.png")
+    bleu_preview = get_image_base64("bleu_de_chanel.png")
+    libre_preview = get_image_base64("libre.png")
+
     st.markdown(
-        """
+        f"""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <p style="color: #8f92a1; font-size: 1.1rem;">Search for top brands to compare deals instantly:</p>
+            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <img src="{sauvage_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Sauvage</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="{bleu_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Bleu de Chanel</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="{libre_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Libre</div>
+                </div>
+            </div>
+        </div>
+
         <div class="deals-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-            <div class="deal-card">
+            <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">Smart Search</div>
@@ -347,7 +427,7 @@ else:
                     </p>
                 </div>
             </div>
-            <div class="deal-card">
+            <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">5 Retailers Compared</div>
@@ -356,7 +436,7 @@ else:
                     </p>
                 </div>
             </div>
-            <div class="deal-card">
+            <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">Deterministic Fallbacks</div>
