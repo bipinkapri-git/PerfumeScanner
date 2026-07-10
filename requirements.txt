@@ -1,0 +1,2 @@
+# Editable install of perfume-scanner with development dependencies
+-e .[dev]
