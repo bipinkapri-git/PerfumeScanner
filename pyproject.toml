@@ -18,7 +18,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    # Add future runtime dependencies here (e.g. pillow, opencv-python, requests)
+    "streamlit>=1.20.0",
+    "beautifulsoup4>=4.11.0",
+    "requests>=2.28.0",
 ]
 
 [project.optional-dependencies]
