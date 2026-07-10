@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Indian Perfume Scanner | Compare Fragrance Deals",
     page_icon="✨",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -50,7 +50,7 @@ st.markdown(
         
         .main-header {
             text-align: center;
-            padding: 1rem 0 0.5rem 0;
+            padding: 2.5rem 0 0.5rem 0;
             background: linear-gradient(135deg, #a881af 0%, #6c529a 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -63,7 +63,7 @@ st.markdown(
             text-align: center;
             font-size: 1.15rem;
             color: #8f92a1;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             font-weight: 400;
         }
         
@@ -252,34 +252,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sidebar Configuration for Retailer Filter
-st.sidebar.title("⚙️ Search Settings")
-st.sidebar.write("Select the Indian retailers you want to compare:")
-
-# Grouping retailers by category in the sidebar
-retailer_names = list(RETAILERS.keys())
-default_checked = ["Belvish", "FridayCharm", "Perfume Palace", "Sillage Perfumes", "Splash Fragrance"]
-
-selected_hubs = []
-st.sidebar.subheader("Arabian & Specialty Hubs")
-for ret in retailer_names[:10]:
-    is_checked = ret in default_checked
-    if st.sidebar.checkbox(ret, value=is_checked):
-        selected_hubs.append(ret)
-
-st.sidebar.subheader("General Luxury & Corporate Retail")
-for ret in retailer_names[10:]:
-    is_checked = ret in default_checked
-    if st.sidebar.checkbox(ret, value=is_checked):
-        selected_hubs.append(ret)
-
-st.sidebar.markdown("---")
-st.sidebar.info("💡 **Scraping Note:** Shopify e-commerce sites will pull down real-time live product titles, images, and prices. Corporate sites will show indexed deals.")
-
 # Header Section
 st.markdown('<div class="main-header">✨ Perfume Scanner</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">Find the best deal for your favorite fragrance across Indian online retailers</div>',
+    '<div class="sub-header">Compare live fragrance deals and real images across 14 leading Indian retailers</div>',
     unsafe_allow_html=True,
 )
 
@@ -301,13 +277,13 @@ with col2:
 if submit_button or perfume_query:
     if not perfume_query.strip():
         st.warning("Please enter a valid perfume name to scan.")
-    elif not selected_hubs:
-        st.warning("Please select at least one retailer in the sidebar to scan.")
     else:
+        all_retailers_list = list(RETAILERS.keys())
+        
         # Beautiful loading spinner
-        with st.spinner(f"Scanning {len(selected_hubs)} retailers for '{perfume_query}'... Please wait."):
+        with st.spinner(f"Scanning all 14 Indian platforms for '{perfume_query}'... Please wait."):
             time.sleep(1.2)
-            raw_deals = scrape_all_retailers(perfume_query, selected_retailers=selected_hubs)
+            raw_deals = scrape_all_retailers(perfume_query, selected_retailers=all_retailers_list)
             processed_data = process_and_compare_deals(raw_deals)
 
         sorted_deals = processed_data["sorted_deals"]
@@ -404,7 +380,7 @@ else:
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">14 Retailers Compared</div>
                     <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
-                        We analyze prices from 14 specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
+                        We automatically analyze prices from 14 specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
                     </p>
                 </div>
             </div>
