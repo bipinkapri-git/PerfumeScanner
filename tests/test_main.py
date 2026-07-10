@@ -17,9 +17,9 @@ class TestPerfumeScanner(unittest.TestCase):
     def test_process_and_compare_deals(self):
         """Test pricing sorting and cheapest flag assignment."""
         deals = [
-            {"retailer": "FragranceNet", "price_str": "$120.00", "link": "link1"},
-            {"retailer": "Jomashop", "price_str": "$99.99", "link": "link2"},
-            {"retailer": "MaxAroma", "price_str": "$135.50", "link": "link3"},
+            {"retailer": "FridayCharm", "price_str": "₹4,500.00", "link": "link1"},
+            {"retailer": "Belvish", "price_str": "₹3,250.00", "link": "link2"},
+            {"retailer": "Splash Fragrance", "price_str": "₹5,200.00", "link": "link3"},
         ]
         
         result = process_and_compare_deals(deals)
@@ -27,15 +27,15 @@ class TestPerfumeScanner(unittest.TestCase):
         cheapest_deal = result["cheapest_deal"]
         
         self.assertEqual(len(sorted_deals), 3)
-        self.assertEqual(cheapest_deal["retailer"], "Jomashop")
-        self.assertEqual(sorted_deals[0]["price_val"], 99.99)
+        self.assertEqual(cheapest_deal["retailer"], "Belvish")
+        self.assertEqual(sorted_deals[0]["price_val"], 3250.0)
         self.assertEqual(sorted_deals[0]["is_cheapest"], True)
         self.assertEqual(sorted_deals[1]["is_cheapest"], False)
         
     def test_deterministic_simulation(self):
         """Test that simulated deals are structured correctly and stable."""
-        deal1 = generate_deterministic_simulated_deal("Jomashop", "Aventus")
-        deal2 = generate_deterministic_simulated_deal("Jomashop", "Aventus")
+        deal1 = generate_deterministic_simulated_deal("Belvish", "Aventus")
+        deal2 = generate_deterministic_simulated_deal("Belvish", "Aventus")
         
         # Check structure keys
         self.assertIn("retailer", deal1)
@@ -51,9 +51,9 @@ class TestPerfumeScanner(unittest.TestCase):
     def test_scraper_fallback(self):
         """Test that scraper falls back to simulation when given invalid input/failures."""
         # Querying with a dummy/empty state or hitting network timeouts will trigger fallback
-        deal = scrape_retailer("FragranceNet", "NonExistentFragranceName")
+        deal = scrape_retailer("Parcos", "NonExistentFragranceName")
         self.assertTrue(deal["is_simulated"])
-        self.assertEqual(deal["retailer"], "FragranceNet")
+        self.assertEqual(deal["retailer"], "Parcos")
 
 
 if __name__ == "__main__":

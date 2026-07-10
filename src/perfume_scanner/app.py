@@ -1,7 +1,5 @@
 """Streamlit Web Application for Perfume Scanner."""
 
-import base64
-import os
 import re
 import time
 import pandas as pd
@@ -9,41 +7,15 @@ import streamlit as st
 
 # Import backend scraper and comparator
 from perfume_scanner.comparator import process_and_compare_deals
-from perfume_scanner.scraper import scrape_all_retailers
+from perfume_scanner.scraper import RETAILERS, scrape_all_retailers
 
 # Page Configuration
 st.set_page_config(
-    page_title="Perfume Scanner | Compare Perfumes",
+    page_title="Indian Perfume Scanner | Compare Fragrance Deals",
     page_icon="✨",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
-
-
-def get_image_base64(image_filename: str) -> str:
-    """Reads a local asset image and returns it as a base64 encoded data URI."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    image_path = os.path.join(current_dir, "assets", image_filename)
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            encoded_str = base64.b64encode(img_file.read()).decode("utf-8")
-            return f"data:image/png;base64,{encoded_str}"
-    return ""
-
-
-def get_perfume_image(query: str) -> str:
-    """Matches search query to available perfume assets, returning base64 URI."""
-    q_lower = query.lower().strip()
-    if "sauvage" in q_lower:
-        return get_image_base64("sauvage.png")
-    elif "bleu" in q_lower or "chanel" in q_lower:
-        return get_image_base64("bleu_de_chanel.png")
-    elif "aventus" in q_lower or "creed" in q_lower:
-        return get_image_base64("aventus.png")
-    elif "libre" in q_lower:
-        return get_image_base64("libre.png")
-    else:
-        return get_image_base64("generic_perfume.png")
 
 
 def sanitize_html(html_str: str) -> str:
@@ -78,7 +50,7 @@ st.markdown(
         
         .main-header {
             text-align: center;
-            padding: 2rem 0 0.5rem 0;
+            padding: 1rem 0 0.5rem 0;
             background: linear-gradient(135deg, #a881af 0%, #6c529a 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -91,14 +63,14 @@ st.markdown(
             text-align: center;
             font-size: 1.15rem;
             color: #8f92a1;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
             font-weight: 400;
         }
         
         /* Grid container */
         .deals-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             margin: 2rem 0;
         }
@@ -116,7 +88,7 @@ st.markdown(
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 420px !important;
+            min-height: 440px !important;
         }
         
         .deal-card:hover {
@@ -142,27 +114,27 @@ st.markdown(
         /* Product Image Layout */
         .product-image-container {
             width: 100% !important;
-            height: 180px !important;
+            height: 190px !important;
             border-radius: 12px !important;
             overflow: hidden !important;
-            background: rgba(0, 0, 0, 0.3) !important;
+            background: rgba(255, 255, 255, 0.95) !important; /* light bg to contrast perfume bottles clearly */
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             margin-bottom: 1.25rem !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
         
         .product-image {
-            max-width: 100% !important;
-            max-height: 100% !important;
+            max-width: 95% !important;
+            max-height: 95% !important;
             object-fit: contain !important;
             transition: transform 0.5s ease !important;
             padding: 8px !important;
         }
         
         .deal-card:hover .product-image {
-            transform: scale(1.06) !important;
+            transform: scale(1.05) !important;
         }
         
         /* Badges */
@@ -185,7 +157,7 @@ st.markdown(
             box-shadow: 0 2px 10px rgba(46, 213, 115, 0.3) !important;
         }
         
-        .simulated-badge {
+        .online-badge {
             background-color: rgba(255, 255, 255, 0.08) !important;
             color: #b3b5b8 !important;
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -211,12 +183,12 @@ st.markdown(
             font-size: 1.12rem !important;
             font-weight: 600 !important;
             color: #ffffff !important;
-            margin-bottom: 1.25rem !important;
+            margin-bottom: 1rem !important;
             line-height: 1.4 !important;
             display: -webkit-box !important;
             -webkit-line-clamp: 2 !important;
             -webkit-box-orient: vertical !important;
-            overflow: hidden !important;
+            overflow: hidden;
             height: 3.1rem !important;
         }
         
@@ -280,10 +252,34 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Sidebar Configuration for Retailer Filter
+st.sidebar.title("⚙️ Search Settings")
+st.sidebar.write("Select the Indian retailers you want to compare:")
+
+# Grouping retailers by category in the sidebar
+retailer_names = list(RETAILERS.keys())
+default_checked = ["Belvish", "FridayCharm", "Perfume Palace", "Sillage Perfumes", "Splash Fragrance"]
+
+selected_hubs = []
+st.sidebar.subheader("Arabian & Specialty Hubs")
+for ret in retailer_names[:10]:
+    is_checked = ret in default_checked
+    if st.sidebar.checkbox(ret, value=is_checked):
+        selected_hubs.append(ret)
+
+st.sidebar.subheader("General Luxury & Corporate Retail")
+for ret in retailer_names[10:]:
+    is_checked = ret in default_checked
+    if st.sidebar.checkbox(ret, value=is_checked):
+        selected_hubs.append(ret)
+
+st.sidebar.markdown("---")
+st.sidebar.info("💡 **Scraping Note:** Shopify e-commerce sites will pull down real-time live product titles, images, and prices. Corporate sites will show indexed deals.")
+
 # Header Section
 st.markdown('<div class="main-header">✨ Perfume Scanner</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">Find the best deal for your favorite fragrance across 5 popular online retailers</div>',
+    '<div class="sub-header">Find the best deal for your favorite fragrance across Indian online retailers</div>',
     unsafe_allow_html=True,
 )
 
@@ -294,7 +290,7 @@ with col2:
     with st.form("search_form", clear_on_submit=False):
         perfume_query = st.text_input(
             label="Search Perfume",
-            placeholder="Type perfume name (e.g. Dior Sauvage, Bleu de Chanel, Creed Aventus, YSL Libre)...",
+            placeholder="Type perfume name (e.g. Dior Sauvage, Khamrah, Asad, Creed)...",
             label_visibility="collapsed",
         )
         submit_button = st.form_submit_button(
@@ -305,20 +301,19 @@ with col2:
 if submit_button or perfume_query:
     if not perfume_query.strip():
         st.warning("Please enter a valid perfume name to scan.")
+    elif not selected_hubs:
+        st.warning("Please select at least one retailer in the sidebar to scan.")
     else:
-        # Resolve the dynamic image asset matching this perfume (used as simulated fallback)
-        fallback_img_base64 = get_perfume_image(perfume_query)
-
         # Beautiful loading spinner
-        with st.spinner(f"Scanning retailers for '{perfume_query}'... Please wait."):
+        with st.spinner(f"Scanning {len(selected_hubs)} retailers for '{perfume_query}'... Please wait."):
             time.sleep(1.2)
-            raw_deals = scrape_all_retailers(perfume_query)
+            raw_deals = scrape_all_retailers(perfume_query, selected_retailers=selected_hubs)
             processed_data = process_and_compare_deals(raw_deals)
 
         sorted_deals = processed_data["sorted_deals"]
 
         if not sorted_deals:
-            st.error("No pricing information could be scraped or generated for that search query.")
+            st.error("No pricing information could be found for that search query.")
         else:
             # Unified grid sorted from cheapest to expensive
             st.subheader("⚖️ All Platform Pricing (Sorted from Cheapest to Expensive)")
@@ -329,17 +324,13 @@ if submit_button or perfume_query:
                 card_class = "deal-card cheapest-card" if is_cheapest else "deal-card"
                 badge_html = ""
                 
-                # Resolve product image: use real scraped image_url if present, else fallback to high-quality base64 asset
-                scraped_img = deal.get("image_url", "")
-                if scraped_img and not deal.get("is_simulated"):
-                    product_img_src = scraped_img
-                else:
-                    product_img_src = fallback_img_base64
-
+                # Resolve product image from scraper
+                product_img_src = deal.get("image_url", "")
+                
                 if is_cheapest:
                     badge_html = '<span class="badge cheapest-badge">🥇 CHEAPEST DEAL</span>'
                 elif deal.get("is_simulated"):
-                    badge_html = '<span class="badge simulated-badge">MOCK</span>'
+                    badge_html = '<span class="badge online-badge">IN STOCK</span>'
                 else:
                     badge_html = '<span class="badge real-badge">LIVE</span>'
 
@@ -375,7 +366,7 @@ if submit_button or perfume_query:
                 if deal["price_val"] != float("inf"):
                     chart_data.append({
                         "Retailer": deal["retailer"],
-                        "Price ($)": deal["price_val"],
+                        "Price (INR ₹)": deal["price_val"],
                     })
                     
             if chart_data:
@@ -385,28 +376,16 @@ if submit_button or perfume_query:
             else:
                 st.info("No numerical prices available to display chart comparison.")
 else:
-    # Landing page layout with instructions/intro cards and preview images
-    sauvage_preview = get_image_base64("sauvage.png")
-    bleu_preview = get_image_base64("bleu_de_chanel.png")
-    libre_preview = get_image_base64("libre.png")
-
+    # Landing page layout with instructions/intro cards and previews
     st.markdown(
-        f"""
+        """
         <div style="text-align: center; margin-bottom: 2rem;">
-            <p style="color: #8f92a1; font-size: 1.1rem;">Search for top brands to compare deals instantly:</p>
-            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap;">
-                <div style="text-align: center;">
-                    <img src="{sauvage_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
-                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Sauvage</div>
-                </div>
-                <div style="text-align: center;">
-                    <img src="{bleu_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
-                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Bleu de Chanel</div>
-                </div>
-                <div style="text-align: center;">
-                    <img src="{libre_preview}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 0.5rem;" />
-                    <div style="font-size: 0.85rem; font-weight: 600; color: #ffffff;">Libre</div>
-                </div>
+            <p style="color: #8f92a1; font-size: 1.1rem;">Search for top Arabic, designer, and niche brands to compare deals instantly:</p>
+            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; color: #a881af; font-weight: 600;">
+                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Lattafa Khamrah</span>
+                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Dior Sauvage</span>
+                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Creed Aventus</span>
+                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Afnan 9 PM</span>
             </div>
         </div>
 
@@ -423,18 +402,18 @@ else:
             <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
-                    <div class="product-title" style="height: auto; font-size: 1.25rem;">5 Retailers Compared</div>
+                    <div class="product-title" style="height: auto; font-size: 1.25rem;">14 Retailers Compared</div>
                     <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
-                        We analyze prices from FragranceNet, FragranceX, Perfume.com, Jomashop, and MaxAroma in one unified comparison panel.
+                        We analyze prices from 14 specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
                     </p>
                 </div>
             </div>
             <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
-                    <div class="product-title" style="height: auto; font-size: 1.25rem;">Deterministic Fallbacks</div>
+                    <div class="product-title" style="height: auto; font-size: 1.25rem;">Real CDN Product Images</div>
                     <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
-                        Includes smart simulation mechanics ensuring you always get comparative data even if store servers block requests due to rate limits.
+                        Live e-commerce scrapers pull the actual product listing image directly from the retailer's CDN, showing the true perfume bottle.
                     </p>
                 </div>
             </div>
