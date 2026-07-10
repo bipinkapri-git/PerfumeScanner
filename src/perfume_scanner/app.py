@@ -2,6 +2,7 @@
 
 import base64
 import os
+import re
 import time
 import pandas as pd
 import streamlit as st
@@ -45,7 +46,13 @@ def get_perfume_image(query: str) -> str:
         return get_image_base64("generic_perfume.png")
 
 
-# Custom Premium Styling
+def sanitize_html(html_str: str) -> str:
+    """Removes newlines and redundant spaces from HTML to prevent Markdown parser bugs."""
+    html_str = html_str.replace("\n", " ")
+    return re.sub(r"\s+", " ", html_str).strip()
+
+
+# Custom Premium Styling - Forces Dark Theme & Card Aesthetics
 st.markdown(
     """
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,20 +60,31 @@ st.markdown(
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Base styles */
+        /* Force global dark theme to prevent text visibility bugs in light mode */
+        [data-testid="stAppViewContainer"] {
+            background-color: #0b0c10 !important;
+            background-image: radial-gradient(circle at top, #141221 0%, #0b0c10 80%) !important;
+            color: #ffffff !important;
+        }
+        
+        [data-testid="stHeader"] {
+            background-color: rgba(11, 12, 16, 0.8) !important;
+            backdrop-filter: blur(8px);
+        }
+        
         * {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
         
         .main-header {
             text-align: center;
-            padding: 2rem 0 1rem 0;
+            padding: 2rem 0 0.5rem 0;
             background: linear-gradient(135deg, #a881af 0%, #6c529a 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-size: 3.5rem;
             font-weight: 800;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
         
         .sub-header {
@@ -80,181 +98,182 @@ st.markdown(
         /* Grid container */
         .deals-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
             gap: 1.5rem;
             margin: 2rem 0;
         }
         
         /* Glassmorphic card styling */
         .deal-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 1.5rem;
-            backdrop-filter: blur(12px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 420px;
+            background: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
+            padding: 1.5rem !important;
+            backdrop-filter: blur(12px) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            position: relative !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 420px !important;
         }
         
         .deal-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(168, 129, 175, 0.4);
-            box-shadow: 0 10px 25px rgba(168, 129, 175, 0.15);
-            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-5px) !important;
+            border-color: rgba(168, 129, 175, 0.45) !important;
+            box-shadow: 0 10px 25px rgba(168, 129, 175, 0.15) !important;
+            background: rgba(255, 255, 255, 0.04) !important;
         }
         
         /* Cheapest Deal styling */
         .cheapest-card {
-            background: linear-gradient(135deg, rgba(46, 213, 115, 0.03) 0%, rgba(46, 213, 115, 0.08) 100%);
-            border: 1px solid rgba(46, 213, 115, 0.35);
-            box-shadow: 0 8px 32px rgba(46, 213, 115, 0.1);
+            background: linear-gradient(135deg, rgba(46, 213, 115, 0.03) 0%, rgba(46, 213, 115, 0.08) 100%) !important;
+            border: 1px solid rgba(46, 213, 115, 0.4) !important;
+            box-shadow: 0 8px 32px rgba(46, 213, 115, 0.12) !important;
         }
         
         .cheapest-card:hover {
-            border-color: rgba(46, 213, 115, 0.6);
-            box-shadow: 0 12px 35px rgba(46, 213, 115, 0.2);
-            background: linear-gradient(135deg, rgba(46, 213, 115, 0.05) 0%, rgba(46, 213, 115, 0.12) 100%);
+            border-color: rgba(46, 213, 115, 0.7) !important;
+            box-shadow: 0 12px 35px rgba(46, 213, 115, 0.22) !important;
+            background: linear-gradient(135deg, rgba(46, 213, 115, 0.05) 0%, rgba(46, 213, 115, 0.12) 100%) !important;
         }
         
         /* Product Image Layout */
         .product-image-container {
-            width: 100%;
-            height: 180px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.25rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100% !important;
+            height: 180px !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 1.25rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
         
         .product-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+            transition: transform 0.5s ease !important;
+            padding: 8px !important;
         }
         
         .deal-card:hover .product-image {
-            transform: scale(1.08);
+            transform: scale(1.06) !important;
         }
         
         /* Badges */
         .badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 0.25rem 0.65rem;
-            border-radius: 20px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            z-index: 10;
+            position: absolute !important;
+            top: 1rem !important;
+            right: 1rem !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            padding: 0.25rem 0.65rem !important;
+            border-radius: 20px !important;
+            letter-spacing: 0.05em !important;
+            text-transform: uppercase !important;
+            z-index: 10 !important;
         }
         
         .cheapest-badge {
-            background-color: #2ed573;
-            color: #0c0d14;
-            box-shadow: 0 2px 10px rgba(46, 213, 115, 0.3);
+            background-color: #2ed573 !important;
+            color: #0c0d14 !important;
+            box-shadow: 0 2px 10px rgba(46, 213, 115, 0.3) !important;
         }
         
         .simulated-badge {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #cfd2d6;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #b3b5b8 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
         }
         
         .real-badge {
-            background-color: rgba(168, 129, 175, 0.2);
-            color: #a881af;
-            border: 1px solid rgba(168, 129, 175, 0.3);
+            background-color: rgba(168, 129, 175, 0.18) !important;
+            color: #c79fd4 !important;
+            border: 1px solid rgba(168, 129, 175, 0.25) !important;
         }
         
         /* Card Content */
         .retailer-name {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #8f92a1;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
+            font-size: 0.85rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.1em !important;
+            color: #a8aab5 !important;
+            font-weight: 700 !important;
+            margin-bottom: 0.4rem !important;
         }
         
         .product-title {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 1.25rem;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            height: 3.2rem;
+            font-size: 1.12rem !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            margin-bottom: 1.25rem !important;
+            line-height: 1.4 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            height: 3.1rem !important;
         }
         
         .price-section {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.25rem !important;
         }
         
         .price-label {
-            font-size: 0.8rem;
-            color: #8f92a1;
+            font-size: 0.8rem !important;
+            color: #8f92a1 !important;
         }
         
         .price-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #ffffff;
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
         }
         
         .cheapest-card .price-value {
-            color: #2ed573;
+            color: #2ed573 !important;
         }
         
         /* Direct Action Button */
         .action-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            text-align: center;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            padding: 0.75rem 1rem !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+            text-align: center !important;
         }
         
         .action-link:hover {
-            background: #ffffff;
-            color: #0c0d14;
-            border-color: #ffffff;
+            background: #ffffff !important;
+            color: #0c0d14 !important;
+            border-color: #ffffff !important;
         }
         
         .cheapest-card .action-link {
-            background: #2ed573;
-            color: #0c0d14;
-            border-color: #2ed573;
-            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.25);
+            background: #2ed573 !important;
+            color: #0c0d14 !important;
+            border-color: #2ed573 !important;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.25) !important;
         }
         
         .cheapest-card .action-link:hover {
-            background: #26b260;
-            border-color: #26b260;
-            color: #ffffff;
+            background: #26b260 !important;
+            border-color: #26b260 !important;
+            color: #ffffff !important;
         }
     </style>
     """,
@@ -287,8 +306,8 @@ if submit_button or perfume_query:
     if not perfume_query.strip():
         st.warning("Please enter a valid perfume name to scan.")
     else:
-        # Resolve the dynamic image asset matching this perfume
-        perfume_img_base64 = get_perfume_image(perfume_query)
+        # Resolve the dynamic image asset matching this perfume (used as simulated fallback)
+        fallback_img_base64 = get_perfume_image(perfume_query)
 
         # Beautiful loading spinner
         with st.spinner(f"Scanning retailers for '{perfume_query}'... Please wait."):
@@ -297,47 +316,12 @@ if submit_button or perfume_query:
             processed_data = process_and_compare_deals(raw_deals)
 
         sorted_deals = processed_data["sorted_deals"]
-        cheapest_deal = processed_data["cheapest_deal"]
 
         if not sorted_deals:
             st.error("No pricing information could be scraped or generated for that search query.")
         else:
-            # Highlight Cheapest Option
-            if cheapest_deal:
-                st.subheader("🔥 Best Deal Found")
-                
-                badge_type = (
-                    "simulated" if cheapest_deal.get("is_simulated") else "real"
-                )
-                badge_label = "MOCK DEAL" if badge_type == "simulated" else "LIVE"
-                
-                st.markdown(
-                    f"""
-                    <div class="deal-card cheapest-card" style="min-height: auto; padding: 2rem; margin-bottom: 2rem; flex-direction: row; align-items: center; gap: 2rem;">
-                        <span class="badge cheapest-badge">🥇 Cheapest Deal</span>
-                        <div class="product-image-container" style="width: 200px; height: 200px; margin-bottom: 0; flex-shrink: 0;">
-                            <img class="product-image" src="{perfume_img_base64}" />
-                        </div>
-                        <div style="flex-grow: 1;">
-                            <div class="retailer-name">{cheapest_deal['retailer']} ({badge_label})</div>
-                            <div class="product-title" style="font-size: 1.5rem; height: auto; display: block; margin-bottom: 1rem;">
-                                {cheapest_deal['product_name']}
-                            </div>
-                            <div class="price-section" style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem;">
-                                <div class="price-value" style="font-size: 3rem;">{cheapest_deal['price_str']}</div>
-                                <div class="price-label">cheapest absolute price</div>
-                            </div>
-                            <a href="{cheapest_deal['link']}" target="_blank" class="action-link" style="max-width: 300px;">
-                                Grab This Deal ↗
-                            </a>
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-            # Compare All Retailers
-            st.subheader("⚖️ All Scraped Deals")
+            # Unified grid sorted from cheapest to expensive
+            st.subheader("⚖️ All Platform Pricing (Sorted from Cheapest to Expensive)")
             
             deals_html = '<div class="deals-grid">'
             for deal in sorted_deals:
@@ -345,8 +329,15 @@ if submit_button or perfume_query:
                 card_class = "deal-card cheapest-card" if is_cheapest else "deal-card"
                 badge_html = ""
                 
+                # Resolve product image: use real scraped image_url if present, else fallback to high-quality base64 asset
+                scraped_img = deal.get("image_url", "")
+                if scraped_img and not deal.get("is_simulated"):
+                    product_img_src = scraped_img
+                else:
+                    product_img_src = fallback_img_base64
+
                 if is_cheapest:
-                    badge_html = '<span class="badge cheapest-badge">🥇 CHEAPEST</span>'
+                    badge_html = '<span class="badge cheapest-badge">🥇 CHEAPEST DEAL</span>'
                 elif deal.get("is_simulated"):
                     badge_html = '<span class="badge simulated-badge">MOCK</span>'
                 else:
@@ -357,7 +348,7 @@ if submit_button or perfume_query:
                     {badge_html}
                     <div>
                         <div class="product-image-container">
-                            <img class="product-image" src="{perfume_img_base64}" />
+                            <img class="product-image" src="{product_img_src}" />
                         </div>
                         <div class="retailer-name">{deal['retailer']}</div>
                         <div class="product-title">{deal['product_name']}</div>
@@ -372,7 +363,9 @@ if submit_button or perfume_query:
                 </div>
                 """
             deals_html += "</div>"
-            st.markdown(deals_html, unsafe_allow_html=True)
+            
+            # Collapse whitespace to prevent the markdown parser from printing raw HTML strings on screen
+            st.markdown(sanitize_html(deals_html), unsafe_allow_html=True)
 
             # Graphical Comparison
             st.subheader("📊 Price Comparison Chart")

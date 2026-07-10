@@ -128,7 +128,8 @@ def generate_deterministic_simulated_deal(retailer_name: str, query: str) -> Dic
         "product_name": product_name,
         "price_str": f"${final_price:.2f}",
         "link": direct_link,
-        "is_simulated": True
+        "is_simulated": True,
+        "image_url": ""
     }
 
 
@@ -181,12 +182,24 @@ def scrape_retailer(retailer_name: str, query: str) -> Dict[str, Any]:
         else:
             link = search_url
             
+        # Extract image URL
+        img_el = first_item.find("img")
+        image_url = ""
+        if img_el:
+            image_url = img_el.get("data-src") or img_el.get("data-lazy") or img_el.get("src") or ""
+            
+        if image_url and image_url.startswith("//"):
+            image_url = f"https:{image_url}"
+        elif image_url and not image_url.startswith("http"):
+            image_url = f"{config['base_url']}{image_url}"
+            
         return {
             "retailer": retailer_name,
             "product_name": title,
             "price_str": price_str,
             "link": link,
-            "is_simulated": False
+            "is_simulated": False,
+            "image_url": image_url
         }
         
     except (requests.RequestException, Exception):
