@@ -1,6 +1,6 @@
 import unittest
 from perfume_scanner.comparator import clean_price, process_and_compare_deals
-from perfume_scanner.scraper import generate_deterministic_simulated_deal, scrape_retailer
+from perfume_scanner.scraper import scrape_retailer, is_matching_product, resize_shopify_image
 
 
 class TestPerfumeScanner(unittest.TestCase):
@@ -31,29 +31,35 @@ class TestPerfumeScanner(unittest.TestCase):
         self.assertEqual(sorted_deals[0]["price_val"], 3250.0)
         self.assertEqual(sorted_deals[0]["is_cheapest"], True)
         self.assertEqual(sorted_deals[1]["is_cheapest"], False)
-        
-    def test_deterministic_simulation(self):
-        """Test that simulated deals are structured correctly and stable."""
-        deal1 = generate_deterministic_simulated_deal("Belvish", "Aventus")
-        deal2 = generate_deterministic_simulated_deal("Belvish", "Aventus")
-        
-        # Check structure keys
-        self.assertIn("retailer", deal1)
-        self.assertIn("product_name", deal1)
-        self.assertIn("price_str", deal1)
-        self.assertIn("link", deal1)
-        self.assertTrue(deal1["is_simulated"])
-        
-        # Check determinism: same query should yield same price
-        self.assertEqual(deal1["price_str"], deal2["price_str"])
-        self.assertEqual(deal1["product_name"], deal2["product_name"])
 
     def test_scraper_fallback(self):
-        """Test that scraper falls back to simulation when given invalid input/failures."""
-        # Querying with a dummy/empty state or hitting network timeouts will trigger fallback
-        deal = scrape_retailer("Parcos", "NonExistentFragranceName")
-        self.assertTrue(deal["is_simulated"])
-        self.assertEqual(deal["retailer"], "Parcos")
+        """Test that scraper returns None when a product is not found (no match)."""
+        # A search query that does not exist should yield no product match, returning None
+        deal = scrape_retailer("FridayCharm", "NonExistentFragranceName")
+        self.assertIsNone(deal)
+
+    def test_is_matching_product(self):
+        """Test strict keyword matching, specifically decant and clone exclusions."""
+        # Simple match
+        self.assertTrue(is_matching_product("Rasasi Hawas", "Rasasi Hawas Pour Homme 100ml"))
+        
+        # Exclude decant if not searched
+        self.assertFalse(is_matching_product("Rasasi Hawas", "Rasasi Hawas Decant 5ml"))
+        # Allow decant if searched
+        self.assertTrue(is_matching_product("Rasasi Hawas Decant", "Rasasi Hawas Decant 5ml"))
+        
+        # Exclude clones/impressions if not searched
+        self.assertFalse(is_matching_product("Bleu de Chanel", "Bleu de Chanel Impression by Generic Brand"))
+        # Allow clones if searched
+        self.assertTrue(is_matching_product("Bleu de Chanel clone", "Bleu de Chanel clone 100ml"))
+
+    def test_resize_shopify_image(self):
+        """Test Shopify image CDN URL resize and {width} replacement."""
+        url_with_width_var = "//cdn.shopify.com/products/image_{width}x.png?v=1"
+        self.assertEqual(
+            resize_shopify_image(url_with_width_var, 300),
+            "//cdn.shopify.com/products/image_300x.png?v=1&width=300"
+        )
 
 
 if __name__ == "__main__":
