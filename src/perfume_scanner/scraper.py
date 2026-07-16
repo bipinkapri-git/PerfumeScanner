@@ -6,6 +6,7 @@ a unified, card-heuristic Shopify parser that successfully extracts live product
 prices, direct links, and actual CDN product images.
 """
 
+import concurrent.futures
 import hashlib
 import re
 import urllib.parse
@@ -125,6 +126,74 @@ RETAILERS = {
 }
 
 
+def _extract_title(card_container, link) -> str:
+    title = ""
+    title_el = card_container.find(class_=re.compile(r'title|name|heading|card__heading'))
+    if title_el:
+        title = title_el.get_text(strip=True)
+    if not title:
+        title = link.get_text(strip=True)
+
+    title = " ".join(title.split())
+
+    if not title or len(title) < 5 or "rs." in title.lower() or "₹" in title.lower():
+        return ""
+    return title
+
+
+def _extract_price(card_container) -> str:
+    price_str = ""
+    price_el = card_container.find(class_=re.compile(r'price|money|sale-price'))
+    if price_el:
+        sale_el = price_el.find(class_=re.compile(r'sale|active'))
+        if sale_el:
+            price_str = sale_el.get_text(strip=True)
+        else:
+            price_str = price_el.get_text(strip=True)
+
+    if not price_str:
+        price_text_el = card_container.find(string=re.compile(r'Rs\.|\bRs\b|₹'))
+        if price_text_el:
+            price_str = price_text_el.parent.get_text(strip=True)
+
+    price_str = " ".join(price_str.split())
+
+    if "sale price" in price_str.lower():
+        matches = re.findall(r'(?:Rs\.|₹)\s*\d+(?:,\d+)*(?:\.\d+)?', price_str, re.IGNORECASE)
+        if len(matches) >= 2:
+            price_str = matches[1]
+        elif len(matches) == 1:
+            price_str = matches[0]
+
+    return price_str
+
+
+def _extract_image_url(card_container, base_url: str) -> str:
+    image_url = ""
+    imgs = card_container.find_all("img")
+    for img_el in imgs:
+        src = (img_el.get("src") or
+               img_el.get("data-src") or
+               img_el.get("data-lazy") or
+               img_el.get("srcset") or
+               img_el.get("data-srcset") or "")
+
+        if "," in src:
+            src = src.split(",")[0].strip().split(" ")[0]
+
+        if not src or any(k in src.lower() for k in ["logo", "icon", "badge", "payment"]):
+            continue
+
+        if src.startswith("//"):
+            image_url = f"https:{src}"
+        elif src.startswith("http"):
+            image_url = src
+        else:
+            image_url = f"{base_url}{src}"
+        break
+    return image_url
+
+
 def generate_deterministic_simulated_deal(retailer_name: str, query: str) -> Dict[str, Any]:
     """Generates a stable, realistic pricing in Indian Rupees (INR) for fallbacks.
     
@@ -209,69 +278,12 @@ def scrape_retailer(retailer_name: str, query: str) -> Dict[str, Any]:
             if not card_container:
                 continue
                 
-            # Title extraction
-            title = ""
-            title_el = card_container.find(class_=re.compile(r'title|name|heading|card__heading'))
-            if title_el:
-                title = title_el.get_text(strip=True)
+            title = _extract_title(card_container, link)
             if not title:
-                title = link.get_text(strip=True)
-                
-            title = " ".join(title.split())
-            
-            # Skip invalid titles or titles containing pricing info
-            if not title or len(title) < 5 or "rs." in title.lower() or "₹" in title.lower():
                 continue
                 
-            # Price extraction
-            price_str = ""
-            price_el = card_container.find(class_=re.compile(r'price|money|sale-price'))
-            if price_el:
-                sale_el = price_el.find(class_=re.compile(r'sale|active'))
-                if sale_el:
-                    price_str = sale_el.get_text(strip=True)
-                else:
-                    price_str = price_el.get_text(strip=True)
-            
-            if not price_str:
-                price_text_el = card_container.find(string=re.compile(r'Rs\.|\bRs\b|₹'))
-                if price_text_el:
-                    price_str = price_text_el.parent.get_text(strip=True)
-                    
-            price_str = " ".join(price_str.split())
-            
-            # Clean up pricing label strings (e.g. Regular Price Rs. 4,000.00 Sale Price Rs. 3,250.00 -> Rs. 3,250.00)
-            if "sale price" in price_str.lower():
-                matches = re.findall(r'(?:Rs\.|₹)\s*\d+(?:,\d+)*(?:\.\d+)?', price_str, re.IGNORECASE)
-                if len(matches) >= 2:
-                    # Usually the second match is the sale/final price
-                    price_str = matches[1]
-                elif len(matches) == 1:
-                    price_str = matches[0]
-                    
-            # Image URL extraction
-            image_url = ""
-            imgs = card_container.find_all("img")
-            for img_el in imgs:
-                src = (img_el.get("src") or 
-                       img_el.get("data-src") or 
-                       img_el.get("data-lazy") or 
-                       img_el.get("srcset") or 
-                       img_el.get("data-srcset") or "")
-                
-                if "," in src:
-                    src = src.split(",")[0].strip().split(" ")[0]
-                    
-                if not src or any(k in src.lower() for k in ["logo", "icon", "badge", "payment"]):
-                    continue
-                    
-                if src.startswith("//"):
-                    image_url = f"https:{src}"
-                elif src.startswith("http"):
-                    image_url = src
-                else:
-                    image_url = f"{config['base_url']}{src}"
-                break
+            price_str = _extract_price(card_container)
+            image_url = _extract_image_url(card_container, config['base_url'])
                 
             if title and price_str:
                 seen_links.add(clean_url)
@@ -304,9 +316,15 @@ def scrape_all_retailers(query: str, selected_retailers: List[str] = None) -> Li
         selected_retailers = ["Belvish", "FridayCharm", "Perfume Palace", "Splash Fragrance"]
         
     results = []
-    for retailer in selected_retailers:
-        if retailer in RETAILERS:
-            deal = scrape_retailer(retailer, query)
-            results.append(deal)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(selected_retailers), 14)) as executor:
+        future_to_retailer = {executor.submit(scrape_retailer, retailer, query): retailer for retailer in selected_retailers if retailer in RETAILERS}
+        for future in concurrent.futures.as_completed(future_to_retailer):
+            try:
+                deal = future.result()
+                if deal:
+                    results.append(deal)
+            except Exception:
+                pass
             
     return results

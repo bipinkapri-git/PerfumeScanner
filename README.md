@@ -49,7 +49,7 @@ source .venv/bin/activate
 Install the project in editable mode with development dependencies:
 
 ```powershell
-pip install -r requirements.txt
+pip install -r environment/requirements.txt
 ```
 
 This will automatically load settings from `pyproject.toml` and configure the command-line entry point `perfume-scanner`.
