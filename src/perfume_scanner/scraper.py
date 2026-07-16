@@ -208,13 +208,15 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             if clean_url in seen_links:
                 continue
                 
-            # Traverse up to find the closest ancestor containing a price
+            # Traverse up to find the closest ancestor containing BOTH a price and an image (full product card wrapper)
             parent = link.parent
             card_container = None
             for _ in range(6):
                 if parent is None:
                     break
-                if parent.find(class_=re.compile(r'price|money|sale-price')) or parent.find(string=re.compile(r'Rs\.|\bRs\b|₹')):
+                has_price = parent.find(class_=re.compile(r'price|money|sale-price')) or parent.find(string=re.compile(r'Rs\.|\bRs\b|₹'))
+                has_image = parent.find("img") or parent.find(attrs={"data-bgset": True})
+                if has_price and has_image:
                     card_container = parent
                     break
                 parent = parent.parent
@@ -225,8 +227,8 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             # Verify that the card container only contains links to this specific product (avoid broad parent body containers)
             prod_links = card_container.find_all("a", href=re.compile(r'/products/'))
             prod_paths = set()
-            for l in prod_links:
-                href_attr = l.get("href", "")
+            for link_el in prod_links:
+                href_attr = link_el.get("href", "")
                 if href_attr:
                     path = href_attr.split("?")[0].split("#")[0]
                     if path.startswith("/"):
@@ -235,20 +237,32 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             
             if len(prod_paths) > 1:
                 continue
-                
-            # Skip sold out or out of stock items
-            card_text_lower = card_container.get_text(" ", strip=True).lower()
-            sold_out_terms = ["sold out", "out of stock", "sold-out", "unavailable"]
-            is_sold_out = any(term in card_text_lower for term in sold_out_terms)
             
-            # Also check badges/labels
-            if not is_sold_out:
-                sold_out_el = card_container.find(class_=re.compile(r'sold-out|out-of-stock|unavailable', re.IGNORECASE))
-                if sold_out_el:
+            # Skip sold out or out of stock items
+            is_sold_out = False
+            
+            variant_script = card_container.find("script", type="application/json")
+            if variant_script:
+                try:
+                    import json
+                    variants = json.loads(variant_script.string)
+                    if isinstance(variants, list) and len(variants) > 0:
+                        is_sold_out = not any(v.get("available", False) for v in variants)
+                    elif isinstance(variants, dict):
+                        is_sold_out = not variants.get("available", True)
+                except Exception:
+                    pass
+            else:
+                sold_out_badge = card_container.find(class_=re.compile(r'badge|label|btn|button|sold-out|out-of-stock', re.IGNORECASE), string=re.compile(r'sold\s*out|out\s*of\s*stock|unavailable', re.IGNORECASE))
+                if sold_out_badge:
                     is_sold_out = True
                     
             if is_sold_out:
                 continue
+
+            # Remove script and style tags to prevent code/CSS from polluting text
+            for code_el in card_container.find_all(['script', 'style']):
+                code_el.decompose()
 
             # Title extraction
             title = ""
@@ -276,10 +290,12 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             # Remove crossed-out/compare-at prices to prevent showing regular price
             for strike_el in card_container.find_all(['s', 'del', 'strike']):
                 strike_el.decompose()
-            for compare_el in card_container.find_all(class_=re.compile(r'compare|old|original|regular|was-price', re.IGNORECASE)):
+            for compare_el in card_container.find_all(class_=re.compile(r'compare|old|original|was-price', re.IGNORECASE)):
                 compare_el.decompose()
             for save_el in card_container.find_all(class_=re.compile(r'save|saving|discount', re.IGNORECASE)):
                 save_el.decompose()
+            for hidden_el in card_container.find_all(class_=re.compile(r'visually-hidden|sr-only', re.IGNORECASE)):
+                hidden_el.decompose()
 
             # Price extraction
             price_str = ""
