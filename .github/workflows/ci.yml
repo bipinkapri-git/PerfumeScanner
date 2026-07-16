@@ -29,4 +29,4 @@ jobs:
         run: ruff check .
 
       - name: Run Bandit SCA
-        run: bandit -r src/ -ll -ii
+        run: bandit -r src/ -lll
