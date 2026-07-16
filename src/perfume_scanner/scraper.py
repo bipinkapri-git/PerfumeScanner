@@ -278,6 +278,8 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
                 strike_el.decompose()
             for compare_el in card_container.find_all(class_=re.compile(r'compare|old|original|regular|was-price', re.IGNORECASE)):
                 compare_el.decompose()
+            for save_el in card_container.find_all(class_=re.compile(r'save|saving|discount', re.IGNORECASE)):
+                save_el.decompose()
 
             # Price extraction
             price_str = ""
@@ -293,6 +295,11 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
                     
             price_str = " ".join(price_str.split())
             
+            # Remove saving text patterns like "Save Rs. X" or "Save Z%" from the price string
+            if price_str:
+                saving_pattern = r'(?:you\s+)?save?s?\s*(?::)?\s*(?:Rs\.?|₹)?\s*\d+(?:,\d+)*(?:\.\d+)?'
+                price_str = re.sub(saving_pattern, '', price_str, flags=re.IGNORECASE)
+                
             # Extract currency numbers and find the active/lowest price
             if price_str:
                 price_matches = re.findall(r'\d+(?:,\d+)*(?:\.\d+)?', price_str)
