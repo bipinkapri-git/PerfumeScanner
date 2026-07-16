@@ -8,7 +8,7 @@ Follow these steps to set up the development environment for Perfume Scanner:
 ## 2. Create a Virtual Environment
 Run the following command to create a virtual environment named `.venv`:
 ```
-python -m virtualenv .venv
+uv venv
 ```
 
 ## 3. Activate the Virtual Environment
@@ -19,5 +19,5 @@ python -m virtualenv .venv
 ## 4. Install Dependencies
 Install the required packages using the `requirements.txt` file located in this directory:
 ```
-pip install -r environment/requirements.txt
+uv pip install -r environment/requirements.txt
 ```

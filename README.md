@@ -32,7 +32,7 @@ Initialize a Python virtual environment to keep dependencies isolated:
 
 ```powershell
 # Create virtual environment
-python -m venv .venv
+uv venv
 
 # Activate virtual environment (Windows PowerShell)
 .venv\Scripts\Activate.ps1
@@ -49,7 +49,7 @@ source .venv/bin/activate
 Install the project in editable mode with development dependencies:
 
 ```powershell
-pip install -r environment/requirements.txt
+uv pip install -r environment/requirements.txt
 ```
 
 This will automatically load settings from `pyproject.toml` and configure the command-line entry point `perfume-scanner`.
