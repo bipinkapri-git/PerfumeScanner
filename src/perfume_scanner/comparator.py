@@ -5,7 +5,7 @@ sorts deals from cheapest to most expensive, and highlights the cheapest option.
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def clean_price(price_str: str) -> float:
@@ -20,7 +20,7 @@ def clean_price(price_str: str) -> float:
     if not price_str:
         return float("inf")
         
-    # Strip whitespace and commas
+    # Strip whitespace, commas, and currency symbols
     price_str = price_str.replace(",", "").strip()
     
     # Use regex to find any floating point or decimal numbers
@@ -53,7 +53,6 @@ def process_and_compare_deals(deals: List[Dict[str, Any]]) -> Dict[str, Any]:
     processed_deals = []
     for deal in deals:
         cleaned_val = clean_price(deal.get("price_str", ""))
-        # Add numeric price key for sorting/graphing
         deal_copy = deal.copy()
         deal_copy["price_val"] = cleaned_val
         processed_deals.append(deal_copy)
@@ -69,7 +68,7 @@ def process_and_compare_deals(deals: List[Dict[str, Any]]) -> Dict[str, Any]:
         cheapest_deal = valid_deals[0]
         # Flag the absolute cheapest option
         for deal in sorted_deals:
-            if deal.get("retailer") == cheapest_deal["retailer"]:
+            if deal.get("retailer") == cheapest_deal["retailer"] and deal["price_val"] == cheapest_deal["price_val"]:
                 deal["is_cheapest"] = True
             else:
                 deal["is_cheapest"] = False

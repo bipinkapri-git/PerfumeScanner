@@ -24,7 +24,50 @@ def sanitize_html(html_str: str) -> str:
     return re.sub(r"\s+", " ", html_str).strip()
 
 
-# Custom Premium Styling - Forces Dark Theme & Card Aesthetics
+def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
+    """Generates a 16-bit high-passed white noise wave file in bytes and encodes it as Base64."""
+    import math
+    import random
+    import struct
+    import base64
+
+    num_samples = int(sample_rate * duration_seconds)
+    samples = []
+    
+    # Simple high-pass white noise difference filter: y[n] = x[n] - x[n-1]
+    prev_x = 0.0
+    for i in range(num_samples):
+        t = i / sample_rate
+        # Quick spray attack (0.08s) followed by exponential decay
+        if t < 0.08:
+            envelope = t / 0.08
+        else:
+            envelope = math.exp(-3.5 * (t - 0.08))
+            
+        x = random.uniform(-1.0, 1.0)
+        y = x - prev_x
+        prev_x = x
+        
+        # Scale volume and clamp PCM limit
+        val = max(-1.0, min(1.0, y * envelope * 0.12))
+        samples.append(int(val * 32767))
+        
+    subchunk2_size = num_samples * 2
+    chunk_size = 36 + subchunk2_size
+    
+    header = struct.pack(
+        '<4sI4s4sIHHIIHH4sI',
+        b'RIFF', chunk_size, b'WAVE',
+        b'fmt ', 16, 1, 1, sample_rate,
+        sample_rate * 2, 2, 16,
+        b'data', subchunk2_size
+    )
+    
+    wav_bytes = header + struct.pack(f'<{len(samples)}h', *samples)
+    return "data:audio/wav;base64," + base64.b64encode(wav_bytes).decode('utf-8')
+
+
+# Custom Premium Red & Black Styling
 st.markdown(
     """
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,15 +75,15 @@ st.markdown(
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Force global dark theme to prevent text visibility bugs in light mode */
+        /* Force global dark red-black theme */
         [data-testid="stAppViewContainer"] {
-            background-color: #0b0c10 !important;
-            background-image: radial-gradient(circle at top, #141221 0%, #0b0c10 80%) !important;
+            background-color: #030304 !important;
+            background-image: radial-gradient(circle at top, #260508 0%, #030304 85%) !important;
             color: #ffffff !important;
         }
         
         [data-testid="stHeader"] {
-            background-color: rgba(11, 12, 16, 0.8) !important;
+            background-color: rgba(3, 3, 4, 0.8) !important;
             backdrop-filter: blur(8px);
         }
         
@@ -50,8 +93,8 @@ st.markdown(
         
         .main-header {
             text-align: center;
-            padding: 2.5rem 0 0.5rem 0;
-            background: linear-gradient(135deg, #a881af 0%, #6c529a 100%);
+            padding: 1rem 0 0.25rem 0;
+            background: linear-gradient(135deg, #ff1a40 0%, #99001a 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-size: 3.5rem;
@@ -61,10 +104,30 @@ st.markdown(
         
         .sub-header {
             text-align: center;
-            font-size: 1.15rem;
-            color: #8f92a1;
-            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+            color: #b0b3c2;
+            margin-bottom: 2rem;
             font-weight: 400;
+        }
+        
+        /* Floating vector logo */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .floating-bottle {
+            width: 90px;
+            height: 90px;
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
         }
         
         /* Grid container */
@@ -75,10 +138,10 @@ st.markdown(
             margin: 2rem 0;
         }
         
-        /* Glassmorphic card styling */
+        /* Glassmorphic card styling - Black & Red theme */
         .deal-card {
-            background: rgba(255, 255, 255, 0.02) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: rgba(255, 255, 255, 0.015) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
             border-radius: 16px !important;
             padding: 1.5rem !important;
             backdrop-filter: blur(12px) !important;
@@ -93,22 +156,22 @@ st.markdown(
         
         .deal-card:hover {
             transform: translateY(-5px) !important;
-            border-color: rgba(168, 129, 175, 0.45) !important;
-            box-shadow: 0 10px 25px rgba(168, 129, 175, 0.15) !important;
-            background: rgba(255, 255, 255, 0.04) !important;
+            border-color: rgba(255, 26, 64, 0.4) !important;
+            box-shadow: 0 10px 25px rgba(255, 26, 64, 0.15) !important;
+            background: rgba(255, 255, 255, 0.035) !important;
         }
         
-        /* Cheapest Deal styling */
+        /* Cheapest Deal styling - Gold & Crimson */
         .cheapest-card {
-            background: linear-gradient(135deg, rgba(46, 213, 115, 0.03) 0%, rgba(46, 213, 115, 0.08) 100%) !important;
-            border: 1px solid rgba(46, 213, 115, 0.4) !important;
-            box-shadow: 0 8px 32px rgba(46, 213, 115, 0.12) !important;
+            background: linear-gradient(135deg, rgba(255, 26, 64, 0.03) 0%, rgba(255, 26, 64, 0.09) 100%) !important;
+            border: 1px solid rgba(255, 26, 64, 0.45) !important;
+            box-shadow: 0 8px 32px rgba(255, 26, 64, 0.15) !important;
         }
         
         .cheapest-card:hover {
-            border-color: rgba(46, 213, 115, 0.7) !important;
-            box-shadow: 0 12px 35px rgba(46, 213, 115, 0.22) !important;
-            background: linear-gradient(135deg, rgba(46, 213, 115, 0.05) 0%, rgba(46, 213, 115, 0.12) 100%) !important;
+            border-color: rgba(255, 26, 64, 0.75) !important;
+            box-shadow: 0 12px 35px rgba(255, 26, 64, 0.25) !important;
+            background: linear-gradient(135deg, rgba(255, 26, 64, 0.05) 0%, rgba(255, 26, 64, 0.14) 100%) !important;
         }
         
         /* Product Image Layout */
@@ -117,24 +180,25 @@ st.markdown(
             height: 190px !important;
             border-radius: 12px !important;
             overflow: hidden !important;
-            background: rgba(255, 255, 255, 0.95) !important; /* light bg to contrast perfume bottles clearly */
+            background: #ffffff !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             margin-bottom: 1.25rem !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05) !important;
         }
         
         .product-image {
-            max-width: 95% !important;
-            max-height: 95% !important;
+            max-width: 90% !important;
+            max-height: 90% !important;
             object-fit: contain !important;
             transition: transform 0.5s ease !important;
-            padding: 8px !important;
+            padding: 4px !important;
         }
         
         .deal-card:hover .product-image {
-            transform: scale(1.05) !important;
+            transform: scale(1.06) !important;
         }
         
         /* Badges */
@@ -152,21 +216,15 @@ st.markdown(
         }
         
         .cheapest-badge {
-            background-color: #2ed573 !important;
-            color: #0c0d14 !important;
-            box-shadow: 0 2px 10px rgba(46, 213, 115, 0.3) !important;
-        }
-        
-        .online-badge {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            color: #b3b5b8 !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            background-color: #ff1a40 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 10px rgba(255, 26, 64, 0.4) !important;
         }
         
         .real-badge {
-            background-color: rgba(168, 129, 175, 0.18) !important;
-            color: #c79fd4 !important;
-            border: 1px solid rgba(168, 129, 175, 0.25) !important;
+            background-color: rgba(255, 26, 64, 0.15) !important;
+            color: #ff6b81 !important;
+            border: 1px solid rgba(255, 26, 64, 0.25) !important;
         }
         
         /* Card Content */
@@ -174,7 +232,7 @@ st.markdown(
             font-size: 0.85rem !important;
             text-transform: uppercase !important;
             letter-spacing: 0.1em !important;
-            color: #a8aab5 !important;
+            color: #b0b3c2 !important;
             font-weight: 700 !important;
             margin-bottom: 0.4rem !important;
         }
@@ -208,10 +266,9 @@ st.markdown(
         }
         
         .cheapest-card .price-value {
-            color: #2ed573 !important;
+            color: #ff1a40 !important;
         }
         
-        /* Direct Action Button */
         .action-link {
             display: inline-flex !important;
             align-items: center !important;
@@ -236,24 +293,153 @@ st.markdown(
         }
         
         .cheapest-card .action-link {
-            background: #2ed573 !important;
-            color: #0c0d14 !important;
-            border-color: #2ed573 !important;
-            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.25) !important;
+            background: #ff1a40 !important;
+            color: #ffffff !important;
+            border-color: #ff1a40 !important;
+            box-shadow: 0 4px 15px rgba(255, 26, 64, 0.3) !important;
         }
         
         .cheapest-card .action-link:hover {
-            background: #26b260 !important;
-            border-color: #26b260 !important;
+            background: #cc0024 !important;
+            border-color: #cc0024 !important;
             color: #ffffff !important;
+        }
+ 
+        /* Premium Spray Atomizer Animations */
+        .spray-box {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 3rem !important;
+            background: rgba(255, 255, 255, 0.01) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 24px !important;
+            backdrop-filter: blur(10px) !important;
+            margin: 2rem 0 !important;
+        }
+
+        .spray-container {
+            position: relative;
+            width: 250px;
+            height: 180px;
+            margin: 1.5rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spray-bottle {
+            width: 90px;
+            height: 90px;
+            position: relative;
+            animation: spray-press 1.2s ease-in-out infinite;
+        }
+
+        @keyframes spray-press {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.92) translateY(4px); }
+        }
+
+        .mist-cloud {
+            position: absolute;
+            top: 32px;
+            left: 170px;
+            width: 120px;
+            height: 60px;
+        }
+
+        .mist-particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 26, 64, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .p1 { width: 15px; height: 15px; top: 20px; left: 0px; animation: spray-mist-1 1.2s ease-out infinite; }
+        .p2 { width: 25px; height: 25px; top: 15px; left: 10px; animation: spray-mist-2 1.2s ease-out infinite; animation-delay: 0.1s; }
+        .p3 { width: 35px; height: 35px; top: 10px; left: 20px; animation: spray-mist-3 1.2s ease-out infinite; animation-delay: 0.2s; }
+        .p4 { width: 45px; height: 45px; top: 5px; left: 30px; animation: spray-mist-4 1.2s ease-out infinite; animation-delay: 0.3s; }
+        .p5 { width: 20px; height: 20px; top: 25px; left: 15px; animation: spray-mist-2 1.2s ease-out infinite; animation-delay: 0.15s; }
+        .p6 { width: 30px; height: 30px; top: 5px; left: 25px; animation: spray-mist-3 1.2s ease-out infinite; animation-delay: 0.25s; }
+
+        @keyframes spray-mist-1 {
+            0% { transform: scale(0.2) translate(-30px, 0); opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { transform: scale(1.5) translate(40px, -10px); opacity: 0; }
+        }
+
+        @keyframes spray-mist-2 {
+            0% { transform: scale(0.2) translate(-30px, 0); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: scale(1.8) translate(60px, 0px); opacity: 0; }
+        }
+
+        @keyframes spray-mist-3 {
+            0% { transform: scale(0.2) translate(-30px, 0); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: scale(2.2) translate(80px, 10px); opacity: 0; }
+        }
+
+        @keyframes spray-mist-4 {
+            0% { transform: scale(0.2) translate(-30px, 0); opacity: 0; }
+            20% { opacity: 0.4; }
+            100% { transform: scale(2.8) translate(100px, -5px); opacity: 0; }
+        }
+ 
+        .scanner-text {
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.1em !important;
+            color: #ff1a40 !important;
+            margin-bottom: 0.5rem !important;
+            animation: pulse-text 1.5s ease-in-out infinite !important;
+            text-transform: uppercase !important;
+        }
+ 
+        @keyframes pulse-text {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+ 
+        .scanning-subtext {
+            color: #b0b3c2 !important;
+            font-size: 0.9rem !important;
         }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+# Floating Vector Logo
+st.markdown(
+    """
+    <div class="logo-container">
+        <svg viewBox="0 0 100 100" class="floating-bottle">
+            <!-- Perfume bottle cap -->
+            <rect x="42" y="10" width="16" height="15" rx="3" fill="none" stroke="#ff1a40" stroke-width="3" />
+            <!-- Bottle neck -->
+            <rect x="46" y="25" width="8" height="5" fill="#ff1a40" />
+            <!-- Main body of bottle -->
+            <path d="M25,30 h50 a8,8 0 0 1 8,8 v45 a8,8 0 0 1 -8,8 h-50 a8,8 0 0 1 -8,-8 v-45 a8,8 0 0 1 8,-8 Z" fill="none" stroke="url(#gradient)" stroke-width="4" />
+            <!-- Label -->
+            <rect x="35" y="45" width="30" height="20" rx="2" fill="none" stroke="#99001a" stroke-width="2" />
+            <!-- Sprayer dip tube -->
+            <line x1="50" y1="30" x2="50" y2="75" stroke="#99001a" stroke-width="1.5" stroke-dasharray="3,3" />
+            <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ff1a40" />
+                    <stop offset="100%" stop-color="#99001a" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Header Section
-st.markdown('<div class="main-header">✨ Perfume Scanner</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Perfume Scanner</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-header">Compare live fragrance deals and real images across 14 leading Indian retailers</div>',
     unsafe_allow_html=True,
@@ -280,16 +466,85 @@ if submit_button or perfume_query:
     else:
         all_retailers_list = list(RETAILERS.keys())
         
-        # Beautiful loading spinner
-        with st.spinner(f"Scanning all 14 Indian platforms for '{perfume_query}'... Please wait."):
-            time.sleep(1.2)
-            raw_deals = scrape_all_retailers(perfume_query, selected_retailers=all_retailers_list)
-            processed_data = process_and_compare_deals(raw_deals)
+        # Play spray sound immediately when form submits (via parent document audio element)
+        st.markdown(f'<audio autoplay src="{generate_spray_wav_base64(1.2)}"></audio>', unsafe_allow_html=True)
+        
+        # Display the custom spray-scanning animation box
+        scanner_placeholder = st.empty()
+        scanner_html = """
+        <div class="spray-box">
+            <div class="spray-container">
+                <svg class="spray-bottle" viewBox="0 0 100 100">
+                    <rect x="42" y="10" width="16" height="15" rx="3" fill="none" stroke="#ff1a40" stroke-width="3" />
+                    <rect x="46" y="25" width="8" height="5" fill="#ff1a40" />
+                    <path d="M25,30 h50 a8,8 0 0 1 8,8 v45 a8,8 0 0 1 -8,8 h-50 a8,8 0 0 1 -8,-8 v-45 a8,8 0 0 1 8,-8 Z" fill="none" stroke="url(#red-gradient)" stroke-width="4" />
+                    <rect x="35" y="45" width="30" height="20" rx="2" fill="none" stroke="#99001a" stroke-width="2" />
+                    <line x1="50" y1="30" x2="50" y2="75" stroke="#99001a" stroke-width="1.5" stroke-dasharray="3,3" />
+                    <defs>
+                        <linearGradient id="red-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff1a40" />
+                            <stop offset="100%" stop-color="#99001a" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="mist-cloud">
+                    <div class="mist-particle p1"></div>
+                    <div class="mist-particle p2"></div>
+                    <div class="mist-particle p3"></div>
+                    <div class="mist-particle p4"></div>
+                    <div class="mist-particle p5"></div>
+                    <div class="mist-particle p6"></div>
+                </div>
+            </div>
+            <div class="scanner-text">Atomizing Fragrance Search...</div>
+            <div class="scanning-subtext">Searching 14 Indian specialty platforms</div>
+        </div>
+        """
+        scanner_placeholder.markdown(sanitize_html(scanner_html), unsafe_allow_html=True)
+        
+        time.sleep(0.4)
+        scanner_html_2 = """
+        <div class="spray-box">
+            <div class="spray-container">
+                <svg class="spray-bottle" viewBox="0 0 100 100">
+                    <rect x="42" y="10" width="16" height="15" rx="3" fill="none" stroke="#ff1a40" stroke-width="3" />
+                    <rect x="46" y="25" width="8" height="5" fill="#ff1a40" />
+                    <path d="M25,30 h50 a8,8 0 0 1 8,8 v45 a8,8 0 0 1 -8,8 h-50 a8,8 0 0 1 -8,-8 v-45 a8,8 0 0 1 8,-8 Z" fill="none" stroke="url(#red-gradient)" stroke-width="4" />
+                    <rect x="35" y="45" width="30" height="20" rx="2" fill="none" stroke="#99001a" stroke-width="2" />
+                    <line x1="50" y1="30" x2="50" y2="75" stroke="#99001a" stroke-width="1.5" stroke-dasharray="3,3" />
+                    <defs>
+                        <linearGradient id="red-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff1a40" />
+                            <stop offset="100%" stop-color="#99001a" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="mist-cloud">
+                    <div class="mist-particle p1"></div>
+                    <div class="mist-particle p2"></div>
+                    <div class="mist-particle p3"></div>
+                    <div class="mist-particle p4"></div>
+                    <div class="mist-particle p5"></div>
+                    <div class="mist-particle p6"></div>
+                </div>
+            </div>
+            <div class="scanner-text">Filtering Decants & Matches...</div>
+            <div class="scanning-subtext">Parsing live prices and CDN product images</div>
+        </div>
+        """
+        scanner_placeholder.markdown(sanitize_html(scanner_html_2), unsafe_allow_html=True)
+
+        # Execute parallel scraping
+        raw_deals = scrape_all_retailers(perfume_query, selected_retailers=all_retailers_list)
+        processed_data = process_and_compare_deals(raw_deals)
+        
+        # Clear the scanner animation
+        scanner_placeholder.empty()
 
         sorted_deals = processed_data["sorted_deals"]
 
         if not sorted_deals:
-            st.error("No pricing information could be found for that search query.")
+            st.info("No matching products found across the 14 Indian retailers. Make sure the name is typed correctly!")
         else:
             # Unified grid sorted from cheapest to expensive
             st.subheader("⚖️ All Platform Pricing (Sorted from Cheapest to Expensive)")
@@ -305,8 +560,6 @@ if submit_button or perfume_query:
                 
                 if is_cheapest:
                     badge_html = '<span class="badge cheapest-badge">🥇 CHEAPEST DEAL</span>'
-                elif deal.get("is_simulated"):
-                    badge_html = '<span class="badge online-badge">IN STOCK</span>'
                 else:
                     badge_html = '<span class="badge real-badge">LIVE</span>'
 
@@ -315,7 +568,7 @@ if submit_button or perfume_query:
                     {badge_html}
                     <div>
                         <div class="product-image-container">
-                            <img class="product-image" src="{product_img_src}" />
+                            <img class="product-image" src="{product_img_src or ''}" />
                         </div>
                         <div class="retailer-name">{deal['retailer']}</div>
                         <div class="product-title">{deal['product_name']}</div>
@@ -331,37 +584,18 @@ if submit_button or perfume_query:
                 """
             deals_html += "</div>"
             
-            # Collapse whitespace to prevent the markdown parser from printing raw HTML strings on screen
             st.markdown(sanitize_html(deals_html), unsafe_allow_html=True)
-
-            # Graphical Comparison
-            st.subheader("📊 Price Comparison Chart")
-            
-            chart_data = []
-            for deal in sorted_deals:
-                if deal["price_val"] != float("inf"):
-                    chart_data.append({
-                        "Retailer": deal["retailer"],
-                        "Price (INR ₹)": deal["price_val"],
-                    })
-                    
-            if chart_data:
-                df = pd.DataFrame(chart_data)
-                df = df.set_index("Retailer")
-                st.bar_chart(df)
-            else:
-                st.info("No numerical prices available to display chart comparison.")
 else:
     # Landing page layout with instructions/intro cards and previews
     st.markdown(
         """
         <div style="text-align: center; margin-bottom: 2rem;">
-            <p style="color: #8f92a1; font-size: 1.1rem;">Search for top Arabic, designer, and niche brands to compare deals instantly:</p>
-            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; color: #a881af; font-weight: 600;">
-                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Lattafa Khamrah</span>
-                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Dior Sauvage</span>
-                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Creed Aventus</span>
-                <span style="background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Afnan 9 PM</span>
+            <p style="color: #b0b3c2; font-size: 1.1rem;">Search for top Arabic, designer, and niche brands to compare deals instantly:</p>
+            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; color: #ff1a40; font-weight: 600;">
+                <span style="background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Lattafa Khamrah</span>
+                <span style="background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Dior Sauvage</span>
+                <span style="background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Creed Aventus</span>
+                <span style="background: rgba(255,255,255,0.03); padding: 0.5rem 1rem; border-radius: 20px;">🔥 Afnan 9 PM</span>
             </div>
         </div>
 
@@ -370,7 +604,7 @@ else:
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">Smart Search</div>
-                    <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+                    <p style="color: #b0b3c2; font-size: 0.9rem; line-height: 1.5; margin: 0;">
                         Type any fragrance name. Our search engine will query the store's backend queries to pull down the matching product listings.
                     </p>
                 </div>
@@ -379,7 +613,7 @@ else:
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">14 Retailers Compared</div>
-                    <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+                    <p style="color: #b0b3c2; font-size: 0.9rem; line-height: 1.5; margin: 0;">
                         We automatically analyze prices from 14 specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
                     </p>
                 </div>
@@ -388,7 +622,7 @@ else:
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">💡</div>
                     <div class="product-title" style="height: auto; font-size: 1.25rem;">Real CDN Product Images</div>
-                    <p style="color: #8f92a1; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+                    <p style="color: #b0b3c2; font-size: 0.9rem; line-height: 1.5; margin: 0;">
                         Live e-commerce scrapers pull the actual product listing image directly from the retailer's CDN, showing the true perfume bottle.
                     </p>
                 </div>
