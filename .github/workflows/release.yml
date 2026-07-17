@@ -1,0 +1,38 @@
+name: Release Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    concurrency: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Semantic Release
+        run: |
+          pip install python-semantic-release
+
+      - name: Run Semantic Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          semantic-release version
+          semantic-release publish
