@@ -36,3 +36,10 @@ perfume-scanner = "perfume_scanner.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.semantic_release]
+version_variables = ["src/perfume_scanner/__init__.py:__version__"]
+version_toml = ["pyproject.toml:project.version"]
+branches.main = { match = "main" }
+upload_to_vcs_release = true
+build_command = "pip install build && python -m build"
