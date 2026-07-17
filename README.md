@@ -1,6 +1,21 @@
 # Perfume Scanner
 
-A premium, interactive web application to scan, compare, and track perfume listings across 14 specialty retailers in India in real-time. Featuring a stunning glassmorphic dark interface, dynamic animations, and atomizer audio feedback.
+A premium, interactive web application to scan, compare, and track perfume listings across 11 active specialty retailers in India in real-time. Featuring a stunning cyber-scanner dark interface, dynamic animations, and atomizer audio feedback.
+
+## Supported Retailers
+
+The search engine queries the following 11 specialty fragrance retailers in parallel:
+* **Sillage Perfumes** (https://sillageperfumes.in)
+* **All Arabic** (https://allarabic.in)
+* **Ahmed Al Maghribi India** (https://ahmedalmaghribi.co.in)
+* **FridayCharm** (https://fridaycharm.com)
+* **Belvish** (https://belvish.com)
+* **Perfume Palace** (https://perfumepalace.in)
+* **Naseem Perfume India** (https://naseemperfume.in)
+* **Splash Fragrance** (https://splashfragrance.in)
+* **Scentira** (https://scentira.in)
+* **Perfume Network India** (https://perfumenetwork.in)
+* **Skinn by Titan** (https://www.skinn.in)
 
 ## Project Structure
 
