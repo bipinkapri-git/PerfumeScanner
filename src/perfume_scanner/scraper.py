@@ -1,6 +1,6 @@
 """Scraper engine for Perfume Scanner.
 
-Queries 14 Indian perfume platforms concurrently in parallel for maximum speed.
+Queries 11 Indian perfume platforms concurrently in parallel for maximum speed.
 Only displays retailers where the searched product is genuinely found and matches
 the search query keywords.
 """
