@@ -249,6 +249,9 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
         seen_links = set()
 
         for link in product_links:
+            if not link or not hasattr(link, "get"):
+                continue
+
             href = link.get("href", "")
             prod_url = f"{config['base_url']}{href}" if href.startswith("/") else href
 
@@ -523,7 +526,7 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
                     "is_simulated": False,
                 }
 
-    except (requests.RequestException, KeyError, ValueError, TypeError):
+    except (requests.RequestException, KeyError, ValueError, TypeError, AttributeError):
         pass
 
     return None
@@ -555,13 +558,7 @@ def scrape_all_retailers(
                     deal
                 ):  # Only append stores that successfully returned a matching deal
                     results.append(deal)
-            except (
-                requests.RequestException,
-                KeyError,
-                ValueError,
-                TypeError,
-                concurrent.futures.CancelledError,
-            ):
+            except Exception:
                 pass
 
     return results
