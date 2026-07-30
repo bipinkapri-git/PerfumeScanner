@@ -4,6 +4,8 @@ This module processes scraped product data, cleanses price strings,
 sorts deals from cheapest to most expensive, and highlights the cheapest option.
 """
 
+from __future__ import annotations
+
 import re
 from typing import Any, Dict, List
 

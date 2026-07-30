@@ -38,13 +38,9 @@ def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
     prev_x = 0.0
     for i in range(num_samples):
         t = i / sample_rate
-        # Quick spray attack (0.08s) followed by exponential decay
-        if t < 0.08:
-            envelope = t / 0.08
-        else:
-            envelope = math.exp(-3.5 * (t - 0.08))
+        envelope = t / 0.08 if t < 0.08 else math.exp(-3.5 * (t - 0.08))
 
-        x = random.uniform(-1.0, 1.0)
+        x = random.uniform(-1.0, 1.0)  # noqa: S311
         y = x - prev_x
         prev_x = x
 
@@ -638,16 +634,15 @@ st.markdown(
 # Main search area in a centered container layout
 col1, col2, col3 = st.columns([1, 2, 1])
 
-with col2:
-    with st.form("search_form", clear_on_submit=False):
-        perfume_query = st.text_input(
-            label="Search Perfume",
-            placeholder="Type perfume name (e.g. Dior Sauvage, Khamrah, Asad, Creed)...",
-            label_visibility="collapsed",
-        )
-        submit_button = st.form_submit_button(
-            "Scan & Compare Prices", use_container_width=True
-        )
+with col2, st.form("search_form", clear_on_submit=False):
+    perfume_query = st.text_input(
+        label="Search Perfume",
+        placeholder="Type perfume name (e.g. Dior Sauvage, Khamrah, Asad, Creed)...",
+        label_visibility="collapsed",
+    )
+    submit_button = st.form_submit_button(
+        "Scan & Compare Prices", use_container_width=True
+    )
 
 # Actions on Form Submit
 if submit_button or perfume_query:
