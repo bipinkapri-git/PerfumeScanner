@@ -40,7 +40,7 @@ def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
         t = i / sample_rate
         envelope = t / 0.08 if t < 0.08 else math.exp(-3.5 * (t - 0.08))
 
-        x = random.uniform(-1.0, 1.0)  # noqa: S311
+        x = random.uniform(-1.0, 1.0)
         y = x - prev_x
         prev_x = x
 

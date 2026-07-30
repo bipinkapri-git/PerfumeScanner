@@ -16,6 +16,8 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
+logger = logging.getLogger(__name__)
+
 # Realistic headers to bypass bot blocks
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -567,6 +569,6 @@ def scrape_all_retailers(
                 AttributeError,
                 concurrent.futures.CancelledError,
             ) as exc:
-                logging.debug("Scraper task failed: %s", exc)
+                logger.debug("Scraper task failed: %s", exc)
 
     return results
