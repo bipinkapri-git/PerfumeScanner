@@ -264,6 +264,16 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             for code_el in card_container.find_all(['script', 'style']):
                 code_el.decompose()
 
+            # Decompose rating, review, star, and review-badge elements so review scores (e.g. 4.79113924) are not misparsed as prices
+            for rating_el in card_container.find_all(class_=re.compile(r'rating|review|jdgm|stamped|yotpo|loox|spr-badge|star|score', re.IGNORECASE)):
+                rating_el.decompose()
+            for rating_attr in card_container.find_all(attrs={'data-rating': True}) + card_container.find_all(attrs={'data-score': True}) + card_container.find_all(attrs={'data-average-rating': True}):
+                rating_attr.decompose()
+            for hidden_rating in card_container.find_all(attrs={'aria-hidden': 'true'}):
+                txt = hidden_rating.get_text(strip=True)
+                if '/' in txt or 'out of' in txt.lower() or 'stars' in txt.lower():
+                    hidden_rating.decompose()
+
             # Title extraction
             title = ""
             link_text = " ".join(link.get_text(strip=True).split())
@@ -319,31 +329,27 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
             # Extract currency numbers and find the active/lowest price
             if price_str:
                 price_matches = re.findall(r'\d+(?:,\d+)*(?:\.\d+)?', price_str)
-                # Filter out percentage values (numbers followed by '%')
+                # Filter out percentage values and numbers outside valid perfume price bounds (e.g. ratings < 50)
                 filtered_matches = []
                 for m in price_matches:
                     match_esc = re.escape(m)
                     if re.search(match_esc + r'\s*%', price_str):
                         continue
-                    filtered_matches.append(m)
-                    
-                if len(filtered_matches) >= 2:
-                    # Clean the numbers to compare them
                     try:
-                        vals = []
-                        for m in filtered_matches:
-                            num = float(m.replace(",", ""))
-                            vals.append((num, m))
-                        # The lower price is the active sale price
-                        vals.sort(key=lambda x: x[0])
-                        lowest_num, lowest_str = vals[0]
-                        symbol = "Rs. " if "rs" in price_str.lower() else "₹"
-                        price_str = f"{symbol}{lowest_str}"
+                        num = float(m.replace(",", ""))
+                        if 50.0 <= num <= 1000000.0:  # Valid price in INR
+                            filtered_matches.append((num, m))
                     except Exception:
-                        price_str = filtered_matches[0]
-                elif len(filtered_matches) == 1:
+                        pass
+                    
+                if filtered_matches:
+                    # Sort to find the lowest active sale price
+                    filtered_matches.sort(key=lambda x: x[0])
+                    lowest_num, lowest_str = filtered_matches[0]
                     symbol = "Rs. " if "rs" in price_str.lower() else "₹"
-                    price_str = f"{symbol}{filtered_matches[0]}"
+                    price_str = f"{symbol}{lowest_str}"
+                else:
+                    price_str = ""
                     
             # Image URL extraction
             image_url = ""
