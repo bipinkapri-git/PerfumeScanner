@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.0.3 (2026-07-30)
+
+### Bug Fixes
+
+- **lint**: Remove unused noqa directive and use module logger
+  ([`6d78f5c`](https://github.com/bipinkapri-git/PerfumeScanner/commit/6d78f5c7fcfe9e67d2bcbb215e0025ec0149467d))
+
+- **scraper**: Resolve S110 and BLE001 by catching explicit exception tuple and adding debug logging
+  ([`073aaad`](https://github.com/bipinkapri-git/PerfumeScanner/commit/073aaad93f03c6e5da96c9cf5926b0cebe870018))
+
+- **scraper**: Safeguard DOM link attribute parsing against AttributeError
+  ([`1f6d148`](https://github.com/bipinkapri-git/PerfumeScanner/commit/1f6d148bfbe5abf2e0384da0a188a6dc6d227992))
+
+
 ## v1.0.2 (2026-07-30)
 
 ### Bug Fixes
