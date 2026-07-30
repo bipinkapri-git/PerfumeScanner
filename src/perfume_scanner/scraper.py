@@ -223,7 +223,7 @@ def resize_shopify_image(url: str, width: int = 300) -> str:
     return url
 
 
-def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
+def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
     """Scrapes search results from a store and returns the first matching product.
 
     Returns None if no matching products are found or if the request fails.
@@ -530,8 +530,8 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
 
 
 def scrape_all_retailers(
-    query: str, selected_retailers: Optional[List[str]] = None
-) -> List[Dict[str, Any]]:
+    query: str, selected_retailers: list[str] | None = None
+) -> list[dict[str, Any]]:
     """Runs scraping across selected Indian retailers concurrently in parallel."""
     if not query or not query.strip():
         return []

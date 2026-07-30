@@ -38,7 +38,7 @@ def clean_price(price_str: str) -> float:
     return float("inf")
 
 
-def process_and_compare_deals(deals: List[Dict[str, Any]]) -> Dict[str, Any]:
+def process_and_compare_deals(deals: list[dict[str, Any]]) -> dict[str, Any]:
     """Cleanses price strings, sorts deals, and flags the cheapest option.
 
     Returns:

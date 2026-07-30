@@ -26,10 +26,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Ruff Linter
-        run: ruff check .
+        run: python -m ruff check .
 
       - name: Run Bandit SCA
-        run: bandit -r src/ -lll
+        run: python -m bandit -r src/ -lll
 
       - name: Run Unit Tests
         run: python -m unittest discover -s tests
