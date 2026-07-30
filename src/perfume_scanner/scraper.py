@@ -10,7 +10,7 @@ from __future__ import annotations
 import concurrent.futures
 import re
 import urllib.parse
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
