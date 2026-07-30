@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.2 (2026-07-30)
+
+### Bug Fixes
+
+- **main**: Handle Streamlit Cloud runtime context to avoid duplicate initialization error
+  ([`a269170`](https://github.com/bipinkapri-git/PerfumeScanner/commit/a26917025381b773798acfa9fbfb11790832220c))
+
+### Build System
+
+- Add vercel.json configuration for Vercel deployment
+  ([`b455ec0`](https://github.com/bipinkapri-git/PerfumeScanner/commit/b455ec046818ef4372ec8a00bd140d688d72a1af))
+
+
 ## v1.0.1 (2026-07-30)
 
 ### Bug Fixes
