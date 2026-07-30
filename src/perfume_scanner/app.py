@@ -2,6 +2,7 @@
 
 import re
 import time
+
 import streamlit as st
 
 # Import backend scraper and comparator
@@ -25,14 +26,14 @@ def sanitize_html(html_str: str) -> str:
 
 def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
     """Generates a 16-bit high-passed white noise wave file in bytes and encodes it as Base64."""
+    import base64
     import math
     import random
     import struct
-    import base64
 
     num_samples = int(sample_rate * duration_seconds)
     samples = []
-    
+
     # Simple high-pass white noise difference filter: y[n] = x[n] - x[n-1]
     prev_x = 0.0
     for i in range(num_samples):
@@ -42,34 +43,42 @@ def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
             envelope = t / 0.08
         else:
             envelope = math.exp(-3.5 * (t - 0.08))
-            
+
         x = random.uniform(-1.0, 1.0)
         y = x - prev_x
         prev_x = x
-        
+
         # Scale volume and clamp PCM limit
         val = max(-1.0, min(1.0, y * envelope * 0.12))
         samples.append(int(val * 32767))
-        
+
     subchunk2_size = num_samples * 2
     chunk_size = 36 + subchunk2_size
-    
+
     header = struct.pack(
-        '<4sI4s4sIHHIIHH4sI',
-        b'RIFF', chunk_size, b'WAVE',
-        b'fmt ', 16, 1, 1, sample_rate,
-        sample_rate * 2, 2, 16,
-        b'data', subchunk2_size
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF",
+        chunk_size,
+        b"WAVE",
+        b"fmt ",
+        16,
+        1,
+        1,
+        sample_rate,
+        sample_rate * 2,
+        2,
+        16,
+        b"data",
+        subchunk2_size,
     )
-    
-    wav_bytes = header + struct.pack(f'<{len(samples)}h', *samples)
-    return "data:audio/wav;base64," + base64.b64encode(wav_bytes).decode('utf-8')
+
+    wav_bytes = header + struct.pack(f"<{len(samples)}h", *samples)
+    return "data:audio/wav;base64," + base64.b64encode(wav_bytes).decode("utf-8")
 
 
 # Custom Premium Red & Black Styling
 st.markdown(
-    sanitize_html(
-        """
+    sanitize_html("""
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -566,15 +575,13 @@ st.markdown(
                 font-weight: 800 !important;
             }
         </style>
-        """
-    ),
+        """),
     unsafe_allow_html=True,
 )
 
 # Floating Vector Logo
 st.markdown(
-    sanitize_html(
-        """
+    sanitize_html("""
 <div class="logo-container">
     <svg viewBox="0 0 100 100" class="floating-bottle">
         <!-- Spray mist particles -->
@@ -604,15 +611,13 @@ st.markdown(
         </defs>
     </svg>
 </div>
-        """
-    ),
+        """),
     unsafe_allow_html=True,
 )
 
 # Header Section
 st.markdown(
-    sanitize_html(
-        """
+    sanitize_html("""
 <div class="high-tech-header-wrap">
     <div class="scanner-laser"></div>
     <div class="corner-bracket cb-tl"></div>
@@ -622,8 +627,7 @@ st.markdown(
     <div class="cyber-grid"></div>
     <h1 class="futuristic-title">Perfume Scanner</h1>
 </div>
-        """
-    ),
+        """),
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -651,10 +655,13 @@ if submit_button or perfume_query:
         st.warning("Please enter a valid perfume name to scan.")
     else:
         all_retailers_list = list(RETAILERS.keys())
-        
+
         # Play spray sound immediately when form submits (via parent document audio element)
-        st.markdown(f'<audio autoplay src="{generate_spray_wav_base64(1.2)}"></audio>', unsafe_allow_html=True)
-        
+        st.markdown(
+            f'<audio autoplay src="{generate_spray_wav_base64(1.2)}"></audio>',
+            unsafe_allow_html=True,
+        )
+
         # Display the custom spray-scanning animation box
         scanner_placeholder = st.empty()
         scanner_html = """
@@ -686,8 +693,10 @@ if submit_button or perfume_query:
             <div class="scanning-subtext">Searching 11 Indian specialty platforms</div>
         </div>
         """
-        scanner_placeholder.markdown(sanitize_html(scanner_html), unsafe_allow_html=True)
-        
+        scanner_placeholder.markdown(
+            sanitize_html(scanner_html), unsafe_allow_html=True
+        )
+
         time.sleep(0.4)
         scanner_html_2 = """
         <div class="spray-box">
@@ -718,34 +727,42 @@ if submit_button or perfume_query:
             <div class="scanning-subtext">Parsing live prices and CDN product images</div>
         </div>
         """
-        scanner_placeholder.markdown(sanitize_html(scanner_html_2), unsafe_allow_html=True)
+        scanner_placeholder.markdown(
+            sanitize_html(scanner_html_2), unsafe_allow_html=True
+        )
 
         # Execute parallel scraping
-        raw_deals = scrape_all_retailers(perfume_query, selected_retailers=all_retailers_list)
+        raw_deals = scrape_all_retailers(
+            perfume_query, selected_retailers=all_retailers_list
+        )
         processed_data = process_and_compare_deals(raw_deals)
-        
+
         # Clear the scanner animation
         scanner_placeholder.empty()
 
         sorted_deals = processed_data["sorted_deals"]
 
         if not sorted_deals:
-            st.info("No matching products found across the 11 Indian retailers. Make sure the name is typed correctly!")
+            st.info(
+                "No matching products found across the 11 Indian retailers. Make sure the name is typed correctly!"
+            )
         else:
             # Unified grid sorted from cheapest to expensive
             st.subheader("⚖️ All Platform Pricing (Sorted from Cheapest to Expensive)")
-            
+
             deals_html = '<div class="deals-grid">'
             for deal in sorted_deals:
                 is_cheapest = deal.get("is_cheapest", False)
                 card_class = "deal-card cheapest-card" if is_cheapest else "deal-card"
                 badge_html = ""
-                
+
                 # Resolve product image from scraper
                 product_img_src = deal.get("image_url", "")
-                
+
                 if is_cheapest:
-                    badge_html = '<span class="badge cheapest-badge">🥇 CHEAPEST DEAL</span>'
+                    badge_html = (
+                        '<span class="badge cheapest-badge">🥇 CHEAPEST DEAL</span>'
+                    )
                 else:
                     badge_html = '<span class="badge real-badge">LIVE</span>'
 
@@ -769,7 +786,7 @@ if submit_button or perfume_query:
                 </div>
                 """
             deals_html += "</div>"
-            
+
             st.markdown(sanitize_html(deals_html), unsafe_allow_html=True)
 else:
     # Landing page layout with instructions/intro cards and previews
