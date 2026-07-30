@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "src/perfume_scanner/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/perfume_scanner/main.py"
+    }
+  ]
+}
