@@ -8,6 +8,7 @@ the search query keywords.
 from __future__ import annotations
 
 import concurrent.futures
+import logging
 import re
 import urllib.parse
 from typing import Any
@@ -558,7 +559,14 @@ def scrape_all_retailers(
                     deal
                 ):  # Only append stores that successfully returned a matching deal
                     results.append(deal)
-            except Exception:
-                pass
+            except (
+                requests.RequestException,
+                KeyError,
+                ValueError,
+                TypeError,
+                AttributeError,
+                concurrent.futures.CancelledError,
+            ) as exc:
+                logging.debug("Scraper task failed: %s", exc)
 
     return results
