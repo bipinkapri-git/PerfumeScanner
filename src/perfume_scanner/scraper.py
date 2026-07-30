@@ -5,6 +5,8 @@ Only displays retailers where the searched product is genuinely found and matche
 the search query keywords.
 """
 
+from __future__ import annotations
+
 import concurrent.futures
 import re
 import urllib.parse
@@ -248,10 +250,7 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
 
         for link in product_links:
             href = link.get("href", "")
-            if href.startswith("/"):
-                prod_url = f"{config['base_url']}{href}"
-            else:
-                prod_url = href
+            prod_url = f"{config['base_url']}{href}" if href.startswith("/") else href
 
             clean_url = prod_url.split("?")[0]
             if clean_url in seen_links:
@@ -306,7 +305,7 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
                         )
                     elif isinstance(variants, dict):
                         is_sold_out = not variants.get("available", True)
-                except Exception:
+                except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
                     pass
             else:
                 sold_out_badge = card_container.find(
@@ -437,13 +436,13 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
                         num = float(m.replace(",", ""))
                         if 50.0 <= num <= 1000000.0:  # Valid price in INR
                             filtered_matches.append((num, m))
-                    except Exception:
+                    except (ValueError, TypeError):
                         pass
 
                 if filtered_matches:
                     # Sort to find the lowest active sale price
                     filtered_matches.sort(key=lambda x: x[0])
-                    lowest_num, lowest_str = filtered_matches[0]
+                    _lowest_num, lowest_str = filtered_matches[0]
                     symbol = "Rs. " if "rs" in price_str.lower() else "₹"
                     price_str = f"{symbol}{lowest_str}"
                 else:
@@ -524,14 +523,14 @@ def scrape_retailer(retailer_name: str, query: str) -> Optional[Dict[str, Any]]:
                     "is_simulated": False,
                 }
 
-    except Exception:
+    except (requests.RequestException, KeyError, ValueError, TypeError):
         pass
 
     return None
 
 
 def scrape_all_retailers(
-    query: str, selected_retailers: List[str] = None
+    query: str, selected_retailers: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """Runs scraping across selected Indian retailers concurrently in parallel."""
     if not query or not query.strip():
@@ -556,7 +555,13 @@ def scrape_all_retailers(
                     deal
                 ):  # Only append stores that successfully returned a matching deal
                     results.append(deal)
-            except Exception:
+            except (
+                requests.RequestException,
+                KeyError,
+                ValueError,
+                TypeError,
+                concurrent.futures.CancelledError,
+            ):
                 pass
 
     return results
