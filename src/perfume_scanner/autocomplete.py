@@ -141,7 +141,13 @@ def get_suggestions(query: str, limit: int = 8) -> list[str]:
 
     combined = list(prefix_matches)
     seen = {name.lower() for name in combined}
-    for name in fuzzy_suggestions(query, limit=limit):
+    # Request more fuzzy candidates than `limit`: some of the top results
+    # may already be in `seen` (overlap with prefix matches) and get
+    # filtered out below. Without the extra headroom, that overlap could
+    # starve `combined` of fewer than `limit` suggestions even when more
+    # non-overlapping fuzzy matches exist in the catalog.
+    fuzzy_pool = fuzzy_suggestions(query, limit=limit + len(seen))
+    for name in fuzzy_pool:
         if name.lower() not in seen:
             combined.append(name)
             seen.add(name.lower())

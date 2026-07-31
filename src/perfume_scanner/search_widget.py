@@ -87,7 +87,46 @@ def render_search_autocomplete(
             el.dispatchEvent(new Event("input", {{ bubbles: true }}));
         }}
 
+        // A single, shared resize/scroll listener is bound to
+        // `window.parent` once per page load (not once per Streamlit
+        // rerun). Every `init()` run just updates which `positionDropdown`
+        // closure the shared listener delegates to, instead of attaching
+        // a brand-new listener each time -- otherwise every rerun would
+        // leak another closure onto the long-lived parent window.
+        function ensurePositionListenerBound() {{
+            const parent = window.parent;
+            if (!parent.__pfAutocompletePosition) {{
+                parent.__pfAutocompletePosition = {{ current: null }};
+            }}
+            if (!parent.__pfAutocompletePositionListenerBound) {{
+                parent.__pfAutocompletePositionListenerBound = true;
+                const reposition = () => {{
+                    if (typeof parent.__pfAutocompletePosition.current === "function") {{
+                        parent.__pfAutocompletePosition.current();
+                    }}
+                }};
+                parent.addEventListener("resize", reposition);
+                parent.addEventListener("scroll", reposition, true);
+            }}
+        }}
+
+        let fuseLoadAttempts = 0;
+        const MAX_FUSE_LOAD_ATTEMPTS = 30; // ~3s of polling at 100ms
+
         function init() {{
+            // Fuse.js loads asynchronously from the CDN <script> tag above.
+            // If it hasn't finished (slow network) or never will (CDN
+            // blocked/offline), poll briefly then give up silently -- the
+            // real text input and form submit button keep working exactly
+            // as before, the user just won't see suggestions.
+            if (typeof Fuse === "undefined") {{
+                fuseLoadAttempts += 1;
+                if (fuseLoadAttempts <= MAX_FUSE_LOAD_ATTEMPTS) {{
+                    setTimeout(init, 100);
+                }}
+                return;
+            }}
+
             const parentDoc = window.parent.document;
             const input = parentDoc.querySelector(
                 `input[aria-label="${{INPUT_LABEL}}"]`
@@ -112,8 +151,16 @@ def render_search_autocomplete(
                 minMatchCharLength: 1,
             }});
 
-            const dropdown = parentDoc.createElement("div");
-            dropdown.id = "pf-autocomplete-dropdown";
+            // Reuse the dropdown from a prior rerun if one is still
+            // attached to the parent document instead of appending a new
+            // one every time -- otherwise hidden, orphaned dropdown
+            // elements would accumulate in `body` across reruns.
+            let dropdown = parentDoc.getElementById("pf-autocomplete-dropdown");
+            if (!dropdown) {{
+                dropdown = parentDoc.createElement("div");
+                dropdown.id = "pf-autocomplete-dropdown";
+                parentDoc.body.appendChild(dropdown);
+            }}
             Object.assign(dropdown.style, {{
                 position: "absolute",
                 zIndex: 9999,
@@ -126,7 +173,6 @@ def render_search_autocomplete(
                 maxHeight: "260px",
                 display: "none",
             }});
-            parentDoc.body.appendChild(dropdown);
 
             function positionDropdown() {{
                 const rect = input.getBoundingClientRect();
@@ -243,8 +289,8 @@ def render_search_autocomplete(
 
             input.addEventListener("input", runSearch);
             input.addEventListener("blur", () => setTimeout(hideDropdown, 150));
-            window.parent.addEventListener("resize", positionDropdown);
-            window.parent.addEventListener("scroll", positionDropdown, true);
+            ensurePositionListenerBound();
+            window.parent.__pfAutocompletePosition.current = positionDropdown;
         }}
 
         init();
