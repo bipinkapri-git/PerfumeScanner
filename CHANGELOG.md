@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-07-31)
+
+### Bug Fixes
+
+- **lint**: Remove quoted forward-reference type annotation (ruff UP037)
+  ([`d031d51`](https://github.com/bipinkapri-git/PerfumeScanner/commit/d031d5178c2a8430c61e7e53712837c0098a281a))
+
+### Chores
+
+- Standardize assets/ into images/ and audio/ subfolders
+  ([`cb79ab4`](https://github.com/bipinkapri-git/PerfumeScanner/commit/cb79ab44ae5a6161dd8f9093c062c39d30750716))
+
+### Features
+
+- Add typo-tolerant search autocomplete
+  ([`e05ef8d`](https://github.com/bipinkapri-git/PerfumeScanner/commit/e05ef8db12a23f1e5fa1e12368420b55a417501d))
+
+- Play a sound effect + clearer message when no products match
+  ([`4601169`](https://github.com/bipinkapri-git/PerfumeScanner/commit/4601169c6f4b4dc70eaed4c3f4c3f72289f61278))
+
+
 ## v1.0.3 (2026-07-30)
 
 ### Bug Fixes
