@@ -2,6 +2,7 @@
 
 import re
 import time
+from pathlib import Path
 
 import streamlit as st
 
@@ -9,6 +10,8 @@ import streamlit as st
 from perfume_scanner.comparator import process_and_compare_deals
 from perfume_scanner.scraper import RETAILERS, scrape_all_retailers
 from perfume_scanner.search_widget import render_search_autocomplete
+
+ASSETS_DIR = Path(__file__).parent / "assets"
 
 # Page Configuration
 st.set_page_config(
@@ -23,6 +26,28 @@ def sanitize_html(html_str: str) -> str:
     """Removes newlines and redundant spaces from HTML to prevent Markdown parser bugs."""
     html_str = html_str.replace("\n", " ")
     return re.sub(r"\s+", " ", html_str).strip()
+
+
+@st.cache_data(show_spinner=False)
+def load_audio_base64(relative_path: str) -> str:
+    """Reads a bundled audio file from `assets/` and returns a base64 data URI.
+
+    Cached so the (small) file is only read and encoded once per session
+    instead of on every Streamlit rerun. Returns an empty string if the
+    asset is missing so a renamed/removed sound effect never crashes the
+    app -- it just silently skips playback.
+    """
+    import base64
+
+    asset_path = ASSETS_DIR / relative_path
+    try:
+        audio_bytes = asset_path.read_bytes()
+    except OSError:
+        return ""
+
+    mime_type = "audio/mpeg" if asset_path.suffix.lower() == ".mp3" else "audio/wav"
+    encoded = base64.b64encode(audio_bytes).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"
 
 
 def generate_spray_wav_base64(duration_seconds=1.2, sample_rate=22050) -> str:
@@ -743,8 +768,18 @@ if submit_button or perfume_query:
         sorted_deals = processed_data["sorted_deals"]
 
         if not sorted_deals:
+            # Play a distinct "no match" sound effect so an invalid/typo'd
+            # search is unmistakable, separate from the scan-start spray sound.
+            no_match_audio = load_audio_base64("sound_effects/faaah.mp3")
+            if no_match_audio:
+                st.markdown(
+                    f'<audio autoplay src="{no_match_audio}"></audio>',
+                    unsafe_allow_html=True,
+                )
             st.info(
-                "No matching products found across the 11 Indian retailers. Make sure the name is typed correctly!"
+                "😩 Faaah! That doesn't look like a real perfume we could find. "
+                "Double-check the spelling, or try a different fragrance name "
+                "(e.g. Dior Sauvage, Khamrah, Asad, Creed)."
             )
         else:
             # Unified grid sorted from cheapest to expensive
