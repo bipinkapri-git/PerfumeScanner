@@ -43,7 +43,7 @@ class _TrieNode:
     __slots__ = ("children", "names")
 
     def __init__(self) -> None:
-        self.children: dict[str, "_TrieNode"] = {}
+        self.children: dict[str, _TrieNode] = {}
         # Original-cased names that pass through this node, in insertion order.
         self.names: list[str] = []
 

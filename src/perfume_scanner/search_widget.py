@@ -140,10 +140,7 @@ def render_search_autocomplete(
                 dropdown.innerHTML = "";
             }}
 
-            function selectSuggestion(name) {{
-                setNativeValue(input, name);
-                hideDropdown();
-                input.focus();
+            function submitForm() {{
                 const submitBtn = parentDoc.querySelector(
                     '[data-testid="stFormSubmitButton"] button'
                 );
@@ -152,9 +149,55 @@ def render_search_autocomplete(
                 }}
             }}
 
-            function renderResults(names) {{
+            function selectSuggestion(name) {{
+                setNativeValue(input, name);
+                hideDropdown();
+                input.focus();
+                submitForm();
+            }}
+
+            // The catalog is only a small hint list, not an exhaustive
+            // product database (see data/perfume_catalog.py) -- it must
+            // never gate what a user is allowed to search for. When
+            // nothing matches (e.g. "Ajmal Shiro", which isn't in the
+            // catalog yet), show a clear "search anyway" affordance
+            // instead of silently hiding the dropdown, so it's obvious
+            // free-text search still works exactly as before.
+            function selectFreeTextSearch() {{
+                hideDropdown();
+                input.focus();
+                submitForm();
+            }}
+
+            function renderNoMatchFallback(query) {{
+                positionDropdown();
+                dropdown.innerHTML = "";
+                const fallback = parentDoc.createElement("div");
+                fallback.textContent = `Search for "${{query}}"`;
+                Object.assign(fallback.style, {{
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    color: "#b0b3c2",
+                    fontStyle: "italic",
+                    fontSize: "0.88rem",
+                }});
+                fallback.addEventListener("mouseenter", () => {{
+                    fallback.style.background = "rgba(255, 26, 64, 0.18)";
+                }});
+                fallback.addEventListener("mouseleave", () => {{
+                    fallback.style.background = "transparent";
+                }});
+                fallback.addEventListener("mousedown", (evt) => {{
+                    evt.preventDefault();
+                    selectFreeTextSearch();
+                }});
+                dropdown.appendChild(fallback);
+                dropdown.style.display = "block";
+            }}
+
+            function renderResults(query, names) {{
                 if (!names.length) {{
-                    hideDropdown();
+                    renderNoMatchFallback(query);
                     return;
                 }}
                 positionDropdown();
@@ -195,7 +238,7 @@ def render_search_autocomplete(
                 const results = fuse
                     .search(query, {{ limit: MAX_RESULTS }})
                     .map((r) => r.item);
-                renderResults(results);
+                renderResults(query, results);
             }}, DEBOUNCE_MS);
 
             input.addEventListener("input", runSearch);

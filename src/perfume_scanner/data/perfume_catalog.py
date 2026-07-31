@@ -106,4 +106,5 @@ PERFUME_CATALOG: list[str] = [
     "Rasasi Blue Lady",
     "Skinn by Titan Celeste",
     "Ajmal Dahn Al Oudh",
+    "Ajmal Shiro",
 ]
