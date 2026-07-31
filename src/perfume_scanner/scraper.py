@@ -8,8 +8,10 @@ the search query keywords.
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import logging
 import re
+import urllib.error
 import urllib.parse
 from typing import Any
 
@@ -20,11 +22,17 @@ logger = logging.getLogger(__name__)
 
 # Realistic headers to bypass bot blocks
 BROWSER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://www.google.com/",
-    "Connection": "keep-alive",
+    "Sec-Ch-Ua": '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 # Shared Session with connection pooling for performance optimization
@@ -39,57 +47,57 @@ session.mount("http://", adapter)
 RETAILERS = {
     "Sillage Perfumes": {
         "base_url": "https://sillageperfumes.in",
-        "search_url": "https://sillageperfumes.in/search?q={query}",
+        "search_url": "https://sillageperfumes.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "All Arabic": {
         "base_url": "https://allarabic.in",
-        "search_url": "https://allarabic.in/search?q={query}",
+        "search_url": "https://allarabic.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Ahmed Al Maghribi India": {
         "base_url": "https://ahmedalmaghribi.co.in",
-        "search_url": "https://ahmedalmaghribi.co.in/search?q={query}",
+        "search_url": "https://ahmedalmaghribi.co.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "FridayCharm": {
         "base_url": "https://fridaycharm.com",
-        "search_url": "https://fridaycharm.com/search?q={query}",
+        "search_url": "https://fridaycharm.com/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Belvish": {
         "base_url": "https://belvish.com",
-        "search_url": "https://belvish.com/search?q={query}",
+        "search_url": "https://belvish.com/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Perfume Palace": {
         "base_url": "https://perfumepalace.in",
-        "search_url": "https://perfumepalace.in/search?q={query}",
+        "search_url": "https://perfumepalace.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Naseem Perfume India": {
         "base_url": "https://naseemperfume.in",
-        "search_url": "https://naseemperfume.in/search?q={query}",
+        "search_url": "https://naseemperfume.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Splash Fragrance": {
         "base_url": "https://splashfragrance.in",
-        "search_url": "https://splashfragrance.in/search?q={query}",
+        "search_url": "https://splashfragrance.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Scentira": {
         "base_url": "https://scentira.in",
-        "search_url": "https://scentira.in/search?q={query}",
+        "search_url": "https://scentira.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Perfume Network India": {
         "base_url": "https://perfumenetwork.in",
-        "search_url": "https://perfumenetwork.in/search?q={query}",
+        "search_url": "https://perfumenetwork.in/search?type=product&q={query}",
         "is_shopify": True,
     },
     "Parcos": {
         "base_url": "https://www.parcos.com",
-        "search_url": "https://www.parcos.com/search?q={query}",
+        "search_url": "https://www.parcos.com/search?type=product&q={query}",
         "is_shopify": False,
     },
     "Nykaa / Nykaa Man": {
@@ -104,10 +112,33 @@ RETAILERS = {
     },
     "Skinn by Titan": {
         "base_url": "https://www.skinn.in",
-        "search_url": "https://www.skinn.in/search?q={query}",
+        "search_url": "https://www.skinn.in/search?type=product&q={query}",
         "is_shopify": True,
     },
 }
+
+
+def clean_product_title(title: str) -> str:
+    """Cleans up and normalizes scraped perfume titles, removing duplicate vendor prefixes."""
+    if not title:
+        return ""
+    title = " ".join(title.split())
+
+    def fix_concat_brand(match: re.Match) -> str:
+        word = match.group(0)
+        m = re.search(r"([A-Z]{2,})([A-Z][a-z]+)", word)
+        if m and m.group(1).lower() == m.group(2).lower():
+            return m.group(2)
+        return word
+
+    title = re.sub(r"\b[A-Z]{2,}[A-Z][a-z]+\b", fix_concat_brand, title)
+
+    words = title.split()
+    if len(words) >= 2 and words[0].lower() == words[1].lower():
+        words = words[1:]
+        title = " ".join(words)
+
+    return title
 
 
 def is_matching_product(query: str, product_title: str) -> bool:
@@ -118,6 +149,8 @@ def is_matching_product(query: str, product_title: str) -> bool:
     """
     if not query or not product_title:
         return False
+
+    product_title = clean_product_title(product_title)
 
     query_lower = query.lower()
     product_title_lower = product_title.lower()
@@ -240,11 +273,29 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
         return None
 
     try:
-        response = session.get(search_url, headers=BROWSER_HEADERS, timeout=3.5)
-        if response.status_code != 200:
+        html_text = None
+        req = urllib.request.Request(search_url, headers=BROWSER_HEADERS)
+        try:
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                if resp.status == 200:
+                    html_text = resp.read().decode("utf-8", errors="ignore")
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            OSError,
+            TimeoutError,
+        ) as exc:
+            logger.debug("urllib fetch failed for %s: %s", search_url, exc)
+
+        if not html_text:
+            response = session.get(search_url, headers=BROWSER_HEADERS, timeout=4.0)
+            if response.status_code == 200:
+                html_text = response.text
+
+        if not html_text:
             return None
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(html_text, "html.parser")
 
         # Find all product links
         product_links = soup.find_all("a", href=re.compile(r"/products/"))
@@ -371,7 +422,7 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
             if not title:
                 title = link.get_text(strip=True)
 
-            title = " ".join(title.split())
+            title = clean_product_title(title)
 
             # Skip invalid titles or titles containing pricing info
             if (
@@ -529,8 +580,95 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
                     "is_simulated": False,
                 }
 
-    except (requests.RequestException, KeyError, ValueError, TypeError, AttributeError):
-        pass
+    except (
+        requests.RequestException,
+        KeyError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        OSError,
+    ) as exc:
+        logger.debug("HTML deal extraction failed for %s: %s", retailer_name, exc)
+
+    # Fallback: Query Shopify's native JSON suggest API if HTML parsing returned no result
+    return scrape_shopify_suggest_api(retailer_name, query)
+
+
+def scrape_shopify_suggest_api(
+    retailer_name: str, query: str
+) -> dict[str, Any] | None:
+    """Fallback scraper querying Shopify's native JSON API to bypass HTML 429 rate limits."""
+    config = RETAILERS.get(retailer_name)
+    if not config or not config.get("is_shopify"):
+        return None
+
+    json_url = f"{config['base_url']}/search/suggest.json?q={urllib.parse.quote_plus(query)}&resources[type]=product"
+    req = urllib.request.Request(json_url, headers=BROWSER_HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=4.0) as resp:
+            if resp.status == 200:
+                raw_json = resp.read().decode("utf-8", errors="ignore")
+                data = json.loads(raw_json)
+                products = (
+                    data.get("resources", {})
+                    .get("results", {})
+                    .get("products", [])
+                )
+                for prod in products:
+                    if not prod.get("available", True):
+                        continue
+                    title = clean_product_title(prod.get("title", ""))
+                    if not title or not is_matching_product(query, title):
+                        continue
+
+                    raw_price = prod.get("price") or prod.get("price_min")
+                    if not raw_price:
+                        continue
+
+                    try:
+                        price_num = float(raw_price)
+                        price_str = f"₹{price_num:,.2f}"
+                    except (ValueError, TypeError):
+                        price_str = f"₹{raw_price}"
+
+                    raw_url = prod.get("url", "")
+                    clean_link = (
+                        f"{config['base_url']}{raw_url}"
+                        if raw_url.startswith("/")
+                        else raw_url
+                    )
+
+                    image_url = prod.get("image")
+                    if not image_url and isinstance(prod.get("featured_image"), dict):
+                        image_url = prod["featured_image"].get("url", "")
+
+                    if image_url:
+                        if image_url.startswith("//"):
+                            image_url = f"https:{image_url}"
+                        image_url = resize_shopify_image(image_url, 300)
+
+                    return {
+                        "retailer": retailer_name,
+                        "product_name": title,
+                        "price_str": price_str,
+                        "link": clean_link.split("?")[0],
+                        "image_url": image_url or "",
+                        "is_simulated": False,
+                    }
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        OSError,
+        TimeoutError,
+        json.JSONDecodeError,
+        KeyError,
+        ValueError,
+        TypeError,
+        AttributeError,
+    ) as exc:
+        logger.debug("Shopify JSON API fallback failed for %s: %s", retailer_name, exc)
 
     return None
 
