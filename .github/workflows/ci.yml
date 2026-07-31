@@ -4,9 +4,33 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main, feature/*, fix/* ]
+    types: [opened, edited, synchronize, reopened]
+    branches: [ main ]
 
 jobs:
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Validate PR Title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-commits:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Commit Messages
+        uses: wagoid/commitlint-github-action@v6
+
   ci:
     name: Lint, Security & Unit Tests
     runs-on: ubuntu-latest
