@@ -770,7 +770,7 @@ if submit_button or perfume_query:
         if not sorted_deals:
             # Play a distinct "no match" sound effect so an invalid/typo'd
             # search is unmistakable, separate from the scan-start spray sound.
-            no_match_audio = load_audio_base64("sound_effects/faaah.mp3")
+            no_match_audio = load_audio_base64("audio/faaah.mp3")
             if no_match_audio:
                 st.markdown(
                     f'<audio autoplay src="{no_match_audio}"></audio>',
