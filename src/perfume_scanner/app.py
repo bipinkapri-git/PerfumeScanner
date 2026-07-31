@@ -8,6 +8,7 @@ import streamlit as st
 # Import backend scraper and comparator
 from perfume_scanner.comparator import process_and_compare_deals
 from perfume_scanner.scraper import RETAILERS, scrape_all_retailers
+from perfume_scanner.search_widget import render_search_autocomplete
 
 # Page Configuration
 st.set_page_config(
@@ -640,6 +641,10 @@ with col2, st.form("search_form", clear_on_submit=False):
         placeholder="Type perfume name (e.g. Dior Sauvage, Khamrah, Asad, Creed)...",
         label_visibility="collapsed",
     )
+    # Real-time, typo-tolerant autocomplete dropdown (client-side only,
+    # debounced) layered on top of the text input above. See
+    # search_widget.py for how it stays in sync with the form field.
+    render_search_autocomplete(input_label="Search Perfume")
     submit_button = st.form_submit_button(
         "Scan & Compare Prices", use_container_width=True
     )
