@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.1.1 (2026-08-05)
+
+### Bug Fixes
+
+- **app**: Fix repeat audio, scraper resilience, title deduplication, and add docs
+  ([`17013ab`](https://github.com/bipinkapri-git/PerfumeScanner/commit/17013abf84491f105ab484e3e0ff2a0d7198b69f))
+
+- **scraper**: Resolve ruff linter exceptions and add debug logging
+  ([`3876563`](https://github.com/bipinkapri-git/PerfumeScanner/commit/3876563d984a2df2633aceb26bc188b745bd5589))
+
+### Chores
+
+- Add .github/CODEOWNERS for @bipinkapri-git
+  ([`606b93d`](https://github.com/bipinkapri-git/PerfumeScanner/commit/606b93dc8dba74406c4a02aaa78121d30747ff07))
+
+- Remove vercel references and configuration
+  ([`d1bd5ac`](https://github.com/bipinkapri-git/PerfumeScanner/commit/d1bd5acfff676ef38b486b2b935cce0a78971081))
+
+### Continuous Integration
+
+- Add PR title and commit message validation for semantic release
+  ([`9b05ef7`](https://github.com/bipinkapri-git/PerfumeScanner/commit/9b05ef7ef66b593e658a548d527e5c42007203ed))
+
+
 ## v1.1.0 (2026-07-31)
 
 ### Bug Fixes
