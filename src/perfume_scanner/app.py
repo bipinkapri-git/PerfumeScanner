@@ -772,18 +772,8 @@ if submit_button or perfume_query:
             # search is unmistakable, separate from the scan-start spray sound.
             no_match_audio = load_audio_base64("audio/faaah.mp3")
             if no_match_audio:
-                ts = int(time.time() * 1000)
                 st.markdown(
-                    f"""
-                    <audio id="faaah-audio-{ts}" autoplay src="{no_match_audio}"></audio>
-                    <img src="x?t={ts}" onerror="
-                        var a = document.getElementById('faaah-audio-{ts}') || window.parent.document.getElementById('faaah-audio-{ts}');
-                        if (a) {{
-                            a.currentTime = 0;
-                            a.play().catch(function() {{}});
-                        }}
-                    " style="display:none;" />
-                    """,
+                    f'<audio autoplay src="{no_match_audio}"></audio>',
                     unsafe_allow_html=True,
                 )
             st.info(
