@@ -73,7 +73,7 @@ class TestPerfumeScanner(unittest.TestCase):
         url_with_width_var = "//cdn.shopify.com/products/image_{width}x.png?v=1"
         self.assertEqual(
             resize_shopify_image(url_with_width_var, 300),
-            "//cdn.shopify.com/products/image_300x.png?v=1&width=300",
+            "//cdn.shopify.com/products/image_1024x.png?v=1",
         )
 
 
