@@ -164,10 +164,10 @@ def render_search_autocomplete(
             Object.assign(dropdown.style, {{
                 position: "absolute",
                 zIndex: 9999,
-                background: "#121216",
-                border: "1px solid rgba(255, 26, 64, 0.35)",
+                background: "#082542",
+                border: "1px solid rgba(0, 229, 255, 0.4)",
                 borderRadius: "10px",
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.55)",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.65)",
                 marginTop: "6px",
                 overflowY: "auto",
                 maxHeight: "260px",
@@ -223,12 +223,12 @@ def render_search_autocomplete(
                 Object.assign(fallback.style, {{
                     padding: "10px 14px",
                     cursor: "pointer",
-                    color: "#b0b3c2",
+                    color: "#8ea8c3",
                     fontStyle: "italic",
                     fontSize: "0.88rem",
                 }});
                 fallback.addEventListener("mouseenter", () => {{
-                    fallback.style.background = "rgba(255, 26, 64, 0.18)";
+                    fallback.style.background = "rgba(0, 229, 255, 0.2)";
                 }});
                 fallback.addEventListener("mouseleave", () => {{
                     fallback.style.background = "transparent";
@@ -259,7 +259,7 @@ def render_search_autocomplete(
                         borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                     }});
                     item.addEventListener("mouseenter", () => {{
-                        item.style.background = "rgba(255, 26, 64, 0.18)";
+                        item.style.background = "rgba(0, 229, 255, 0.2)";
                     }});
                     item.addEventListener("mouseleave", () => {{
                         item.style.background = "transparent";
