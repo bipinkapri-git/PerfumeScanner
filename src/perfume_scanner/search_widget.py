@@ -1,7 +1,7 @@
 """Client-side, typo-tolerant search autocomplete widget for Streamlit.
 
 Perfume Scanner has no product database -- every search triggers a live
-scrape across 14 retailer storefronts (see `scraper.py`). Autocomplete
+scrape across 15 retailer storefronts (see `scraper.py`). Autocomplete
 therefore runs entirely in the browser against the small, static
 catalog in `data/perfume_catalog.py`. It never calls back into
 Streamlit/Python while typing, so it adds *zero* load to the backend
