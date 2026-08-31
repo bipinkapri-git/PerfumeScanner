@@ -29,6 +29,7 @@ LOAD_TEST_QUERIES = [
 @pytest.mark.parametrize("query", LOAD_TEST_QUERIES)
 def test_single_query_load(query: str):
     """Verifies that individual fragrance queries return non-empty deals with valid images and prices."""
+    time.sleep(0.5)  # Brief pause between test queries to respect live store rate-limits
     start_time = time.time()
     deals = scrape_all_retailers(query)
     elapsed = time.time() - start_time

@@ -76,6 +76,16 @@ class TestPerfumeScanner(unittest.TestCase):
             "//cdn.shopify.com/products/image_1024x.png?v=1",
         )
 
+    def test_mom_perfume_retailer_config(self):
+        """Test that Mom Perfume is properly configured in RETAILERS."""
+        from perfume_scanner.scraper import RETAILERS
+
+        self.assertIn("Mom Perfume", RETAILERS)
+        config = RETAILERS["Mom Perfume"]
+        self.assertEqual(config["base_url"], "https://momperfume.in")
+        self.assertEqual(config["search_url"], "https://momperfume.in/search?q={query}")
+        self.assertTrue(config["is_shopify"])
+
 
 if __name__ == "__main__":
     unittest.main()

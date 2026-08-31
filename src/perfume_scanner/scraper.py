@@ -1,6 +1,6 @@
 """Scraper engine for Perfume Scanner.
 
-Queries 11 Indian perfume platforms concurrently in parallel for maximum speed.
+Queries 15 Indian perfume platforms concurrently in parallel for maximum speed.
 Only displays retailers where the searched product is genuinely found and matches
 the search query keywords.
 """
@@ -8,6 +8,7 @@ the search query keywords.
 from __future__ import annotations
 
 import concurrent.futures
+import html
 import json
 import logging
 import re
@@ -37,7 +38,7 @@ adapter = requests.adapters.HTTPAdapter(
 session.mount("https://", adapter)
 session.mount("http://", adapter)
 
-# The 14 Indian retailers requested by the user
+# The 15 Indian retailers requested by the user
 RETAILERS = {
     "Sillage Perfumes": {
         "base_url": "https://sillageperfumes.in",
@@ -87,6 +88,11 @@ RETAILERS = {
     "Perfume Network India": {
         "base_url": "https://perfumenetwork.in",
         "search_url": "https://perfumenetwork.in/search?q={query}",
+        "is_shopify": True,
+    },
+    "Mom Perfume": {
+        "base_url": "https://momperfume.in",
+        "search_url": "https://momperfume.in/search?q={query}",
         "is_shopify": True,
     },
     "Parcos": {
@@ -444,7 +450,7 @@ def scrape_retailer(retailer_name: str, query: str) -> dict[str, Any] | None:
 
                 valid_candidates = []
                 for candidate in raw_img_matches:
-                    c_clean = candidate.split(",")[0].strip().split(" ")[0]
+                    c_clean = html.unescape(candidate.split(",")[0].strip().split(" ")[0])
                     if c_clean.startswith("//"):
                         c_clean = f"https:{c_clean}"
                     elif not c_clean.startswith("http"):
@@ -547,6 +553,7 @@ def scrape_shopify_suggest_api(
                         image_url = prod["featured_image"].get("url", "")
 
                     if image_url:
+                        image_url = html.unescape(image_url)
                         if image_url.startswith("//"):
                             image_url = f"https:{image_url}"
                         image_url = resize_shopify_image(image_url, 300)

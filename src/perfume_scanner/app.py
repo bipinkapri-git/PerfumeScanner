@@ -1777,7 +1777,7 @@ if submit_button or perfume_query:
 else:
     # Landing page layout with instructions/intro cards and previews
     st.markdown(
-        """
+        f"""
         <div style="text-align: center; margin-bottom: 2rem;">
             <p style="color: #8ea8c3; font-size: 1.1rem;">Search for top Arabic, designer, and niche brands to compare deals instantly:</p>
             <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; color: #00e5ff; font-weight: 600;">
@@ -1801,9 +1801,9 @@ else:
             <div class="deal-card" style="min-height: 250px;">
                 <div>
                     <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
-                    <div class="product-title" style="height: auto; font-size: 1.25rem;">11 Retailers Compared</div>
+                    <div class="product-title" style="height: auto; font-size: 1.25rem;">{len(RETAILERS)} Retailers Compared</div>
                     <p style="color: #8ea8c3; font-size: 0.9rem; line-height: 1.5; margin: 0;">
-                        We automatically analyze prices from 11 specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
+                        We automatically analyze prices from {len(RETAILERS)} specialty Arabian stores, niche boutiques, and general luxury e-commerce platforms in India.
                     </p>
                 </div>
             </div>
