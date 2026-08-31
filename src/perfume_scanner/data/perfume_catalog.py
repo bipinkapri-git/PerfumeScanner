@@ -1,7 +1,7 @@
 """Static autocomplete catalog for Perfume Scanner's search box.
 
 IMPORTANT: Perfume Scanner has no product database. Every search
-triggers a live, on-demand scrape across 14 retailer storefronts (see
+triggers a live, on-demand scrape across 15 retailer storefronts (see
 `scraper.py`) -- there is nothing to query for instant suggestions.
 
 This module ships a small, hand-curated list of well-known fragrance

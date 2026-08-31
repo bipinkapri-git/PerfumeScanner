@@ -1,7 +1,7 @@
 """Typo-tolerant, prefix-based autocomplete engine for perfume names.
 
 Perfume Scanner has no persisted product catalog: every search triggers
-live HTTP scraping across 14 retailer storefronts (see `scraper.py`).
+live HTTP scraping across 15 retailer storefronts (see `scraper.py`).
 To give users instant type-ahead suggestions without hitting the
 network (or overloading those retailers), we match locally against a
 small, static catalog of well-known fragrance names
